@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   const { data: reviews, error } = await supabase
     .from(reviewTable)
     .select('*')
-    .order('id', { ascending: true });
+    .order('id', { ascending: false });
 
   return (
     <AdminDashboardClient

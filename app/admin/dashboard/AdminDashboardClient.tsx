@@ -38,7 +38,7 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
       const { data, error } = await supabase
         .from(reviewTable)
         .select('*')
-        .order('id', { ascending: true });
+        .order('id', { ascending: false });
 
       if (!error) {
         setReviews(data as Review[]);
