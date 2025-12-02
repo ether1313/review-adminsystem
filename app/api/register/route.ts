@@ -17,7 +17,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check duplicate username under same brand
+    // Check if brand already registered
+    const { data: existingBrand } = await supabase
+      .from("brands_credentials")
+      .select("brand_name")
+      .eq("brand_name", brand_name)
+      .maybeSingle();
+
+    if (existingBrand) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Brand "${brand_name}" is already registered. Please contact admin.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // Check duplicate username under brand
     const { data: exists } = await supabase
       .from("brands_credentials")
       .select("*")
@@ -27,19 +44,24 @@ export async function POST(req: Request) {
 
     if (exists) {
       return NextResponse.json(
-        { success: false, message: "Username already exists under this brand." },
+        {
+          success: false,
+          message: "Username already exists under this brand.",
+        },
         { status: 409 }
       );
     }
 
+    // review_table = lowercase + _review
     const lowercaseTable = `${brand_name.toLowerCase()}_review`;
 
+    // Insert new user
     const { error } = await supabase.from("brands_credentials").insert([
       {
-        brand_name,          // Store brand name as original (capital form)
+        brand_name, // keep original casing
         username,
         password,
-        review_table: lowercaseTable,   // Always lowercase + _review
+        review_table: lowercaseTable,
       },
     ]);
 

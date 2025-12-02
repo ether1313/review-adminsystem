@@ -65,16 +65,17 @@ export default function Home() {
   // Handle Register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (regPassword !== regConfirmPassword) {
-      alert('Passwords do not match');
+      alert("Passwords do not match");
       return;
     }
 
     setRegLoading(true);
 
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         brand_name: brand,
         username: regUsername,
@@ -86,11 +87,19 @@ export default function Home() {
     setRegLoading(false);
 
     if (!data.success) {
-      alert(data.message || 'Failed to register');
+      alert(data.message || "Failed to register");
       return;
     }
 
-    alert('Account created! Please login.');
+    // 🔥 清空所有栏位
+    setBrand("");
+    setRegUsername("");
+    setRegPassword("");
+    setRegConfirmPassword("");
+    setRegShowPassword(false);
+    setRegShowConfirmPassword(false);
+
+    alert("Account created! Please login.");
     setShowRegister(false);
   };
 
