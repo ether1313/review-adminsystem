@@ -68,6 +68,32 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
     }
   };
 
+  const exportToCSV = () => {
+    if (!filteredAndSortedReviews || filteredAndSortedReviews.length === 0) return;
+
+    const headers = Object.keys(filteredAndSortedReviews[0]).join(",");
+    const rows = filteredAndSortedReviews
+      .map((row) =>
+        Object.values(row)
+          .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
+
+    const csvContent = [headers, rows].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "reviews.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   const filteredAndSortedReviews = reviews
     .filter(review => {
       const matchesRating = 
@@ -114,6 +140,15 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
           <h2 className="text-xl sm:text-3xl font-bold text-gray-800">
             Welcome, {brandName}
           </h2>
+        </div>
+
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={exportToCSV}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+          >
+            Export CSV
+          </button>
         </div>
 
         <FilterSection
