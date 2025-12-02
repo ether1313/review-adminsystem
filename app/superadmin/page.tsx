@@ -30,6 +30,8 @@ export default function SuperAdminDashboard() {
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
 
+    localStorage.setItem("logoutSuccess", "true");
+
     router.replace("/"); // replace 可阻挡浏览器 back
   };
 
