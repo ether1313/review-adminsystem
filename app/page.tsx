@@ -28,6 +28,16 @@ export default function Home() {
   const [regShowPassword, setRegShowPassword] = useState(false);
   const [regShowConfirmPassword, setRegShowConfirmPassword] = useState(false);
 
+  // ✨ 新增：清空 register 表单功能
+  const resetRegisterForm = () => {
+    setBrand("");
+    setRegUsername("");
+    setRegPassword("");
+    setRegConfirmPassword("");
+    setRegShowPassword(false);
+    setRegShowConfirmPassword(false);
+  };
+
   // Handle logout success display
   useEffect(() => {
     const logoutSuccess = localStorage.getItem('logoutSuccess');
@@ -91,14 +101,7 @@ export default function Home() {
       return;
     }
 
-    // 🔥 清空所有栏位
-    setBrand("");
-    setRegUsername("");
-    setRegPassword("");
-    setRegConfirmPassword("");
-    setRegShowPassword(false);
-    setRegShowConfirmPassword(false);
-
+    resetRegisterForm();
     alert("Account created! Please login.");
     setShowRegister(false);
   };
@@ -229,11 +232,17 @@ export default function Home() {
 
       {/* Register Modal */}
       {showRegister && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-xl relative">
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          onClick={() => { resetRegisterForm(); setShowRegister(false); }}
+        >
+          <div
+            className="bg-white p-6 rounded-xl w-full max-w-md shadow-xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
 
             <button
-              onClick={() => setShowRegister(false)}
+              onClick={() => { resetRegisterForm(); setShowRegister(false); }}
               className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
             >
               ✕
