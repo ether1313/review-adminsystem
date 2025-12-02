@@ -59,6 +59,19 @@ export default function Home() {
     setError('');
     setIsLoading(true);
 
+    // SUPERADMIN LOGIN
+    if (username === "superadmin" && password === "superadmin888") {
+      // show loading then redirect
+      setShowSuccessNotification(true);
+
+      setTimeout(() => {
+        router.push("/superadmin");
+      }, 800);
+
+      return;
+    }
+
+    // NORMAL BRAND LOGIN (API)
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -74,7 +87,10 @@ export default function Home() {
     }
 
     setShowSuccessNotification(true);
-    setTimeout(() => router.push('/admin/dashboard'), 1000);
+
+    setTimeout(() => {
+      router.push('/admin/dashboard');
+    }, 800);
   };
 
   // Handle Register
