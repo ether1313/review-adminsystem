@@ -32,98 +32,90 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(true);
 
-  // 从 Supabase 拉取对应 table 的数据
   useEffect(() => {
     const loadData = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from(reviewTable)
         .select('*')
         .order('id', { ascending: true });
 
-      if (!error) {
-        setReviews(data as Review[]);
-      }
+      setReviews(data as Review[]);
       setIsLoading(false);
     };
 
     loadData();
   }, [reviewTable]);
 
-  // Logout API
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
 
-  // 让 login page 能显示 logout notification
-  localStorage.setItem("logoutSuccess", "true");
-
+    localStorage.setItem("logoutSuccess", "true");
     router.replace("/");
   };
 
   const handleSort = (column: keyof Review) => {
     if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(d => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortColumn(column);
       setSortDirection('asc');
     }
   };
 
+  /** Export CSV */
   const exportToCSV = () => {
-    if (!filteredAndSortedReviews || filteredAndSortedReviews.length === 0) return;
+    if (!filteredAndSortedReviews.length) return;
 
     const headers = Object.keys(filteredAndSortedReviews[0]).join(",");
     const rows = filteredAndSortedReviews
-      .map((row) =>
-        Object.values(row)
-          .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+      .map(r =>
+        Object.values(r)
+          .map(v => `"${String(v).replace(/"/g, '""')}"`)
           .join(",")
       )
       .join("\n");
 
-    const csvContent = [headers, rows].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([headers + "\n" + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "reviews.csv");
-    document.body.appendChild(link);
+    link.download = "reviews.csv";
     link.click();
-    document.body.removeChild(link);
   };
 
-
+  /** Filtering + Sorting */
   const filteredAndSortedReviews = reviews
     .filter(review => {
-      const matchesRating = 
+      const matchRating =
         filterRating === 'All' || review.rating === parseInt(filterRating);
-      const matchesSearch =
-        searchQuery === '' ||
-        review.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        review.casino_wallet.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        review.games.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        review.experiences.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        review.others.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesRating && matchesSearch;
+      const q = searchQuery.toLowerCase();
+
+      const matchSearch =
+        q === '' ||
+        review.name.toLowerCase().includes(q) ||
+        review.casino_wallet.toLowerCase().includes(q) ||
+        review.games.toLowerCase().includes(q) ||
+        review.experiences.toLowerCase().includes(q) ||
+        review.others.toLowerCase().includes(q);
+
+      return matchRating && matchSearch;
     })
     .sort((a, b) => {
       if (!sortColumn) return 0;
 
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
+      const x = a[sortColumn];
+      const y = b[sortColumn];
 
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
+      if (typeof x === 'string' && typeof y === 'string') {
         return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
+          ? x.localeCompare(y)
+          : y.localeCompare(x);
       }
 
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc'
-          ? aValue - bValue
-          : bValue - aValue;
+      if (typeof x === 'number' && typeof y === 'number') {
+        return sortDirection === 'asc' ? x - y : y - x;
       }
 
       return 0;
@@ -135,17 +127,19 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
     <div className="min-h-screen bg-gray-50">
       <TopNav onLogout={handleLogout} />
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-8">
-        <div className="mb-4 sm:mb-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4">
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+
           <h2 className="text-xl sm:text-3xl font-bold text-gray-800">
             Welcome, {brandName}
           </h2>
-        </div>
 
-        <div className="flex justify-end mb-4">
+          {/* Export CSV Button — Mobile Responsive */}
           <button
             onClick={exportToCSV}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
+                       text-sm font-medium w-full sm:w-auto"
           >
             Export CSV
           </button>

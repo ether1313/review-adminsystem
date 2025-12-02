@@ -31,119 +31,101 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
     tableRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  /** 排序后自动跳第一页 */
+  /** Sorting → always reset to page 1 */
   useEffect(() => {
     setCurrentPage(1);
   }, [sortColumn, sortDirection]);
 
-  const paginatedReviews = useMemo(() => {
+  /** Slice for pagination */
+  const paginated = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return reviews.slice(start, start + pageSize);
   }, [reviews, currentPage, pageSize]);
 
-  const renderStars = (rating: number) =>
-    '★'.repeat(rating) + '☆'.repeat(5 - rating);
-
-  const renderSortIcon = (column: keyof Review) => {
-    if (sortColumn !== column) {
-      return <i className="ri-arrow-up-down-line ml-1 text-gray-400 text-xs sm:text-base" />;
-    }
-    return sortDirection === 'asc'
-      ? <i className="ri-arrow-up-line ml-1 text-xs sm:text-base" />
-      : <i className="ri-arrow-down-line ml-1 text-xs sm:text-base" />;
-  };
-
-  /** 页码 collapse（只显示附近5个按钮） */
+  /** Pagination window */
   const getVisiblePages = () => {
     const delta = 2;
-    let start = Math.max(1, currentPage - delta);
-    let end = Math.min(totalPages, currentPage + delta);
-    let pages = [];
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    return pages;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
   const visiblePages = getVisiblePages();
 
+  const renderStars = (r: number) =>
+    "★".repeat(r) + "☆".repeat(5 - r);
+
+  const renderSortIcon = (column: keyof Review) => {
+    if (sortColumn !== column)
+      return <i className="ri-arrow-up-down-line ml-1 text-gray-400 text-xs" />;
+
+    return sortDirection === "asc"
+      ? <i className="ri-arrow-up-line ml-1 text-xs" />
+      : <i className="ri-arrow-down-line ml-1 text-xs" />;
+  };
+
   return (
     <>
       {/* TABLE */}
-      <div ref={tableRef} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div ref={tableRef} className="bg-white rounded-lg border shadow-sm overflow-hidden">
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-blue-500">
 
                 <th onClick={() => onSort('name')}
-                    className="px-4 py-3 cursor-pointer text-sm font-semibold text-blue-600 whitespace-nowrap hover:bg-blue-50">
-                  <div className="flex items-center">
-                    Name {renderSortIcon('name')}
-                  </div>
+                    className="px-4 py-3 cursor-pointer whitespace-nowrap text-blue-600 font-semibold hover:bg-blue-50">
+                  <div className="flex items-center">Name {renderSortIcon('name')}</div>
                 </th>
 
                 <th onClick={() => onSort('casino_wallet')}
-                    className="px-4 py-3 cursor-pointer text-sm font-semibold text-blue-600 whitespace-nowrap hover:bg-blue-50">
-                  <div className="flex items-center">
-                    Casino Wallet {renderSortIcon('casino_wallet')}
-                  </div>
+                    className="px-4 py-3 cursor-pointer whitespace-nowrap text-blue-600 font-semibold hover:bg-blue-50">
+                  <div className="flex items-center">Casino Wallet {renderSortIcon('casino_wallet')}</div>
                 </th>
 
                 <th onClick={() => onSort('games')}
-                    className="px-4 py-3 cursor-pointer text-sm font-semibold text-blue-600 whitespace-nowrap hover:bg-blue-50">
-                  <div className="flex items-center">
-                    Games {renderSortIcon('games')}
-                  </div>
+                    className="px-4 py-3 cursor-pointer whitespace-nowrap text-blue-600 font-semibold hover:bg-blue-50">
+                  <div className="flex items-center">Games {renderSortIcon('games')}</div>
                 </th>
 
                 <th onClick={() => onSort('experiences')}
-                    className="px-4 py-3 cursor-pointer text-sm font-semibold text-blue-600 whitespace-nowrap hover:bg-blue-50">
-                  <div className="flex items-center">
-                    Experiences {renderSortIcon('experiences')}
-                  </div>
+                    className="px-4 py-3 cursor-pointer whitespace-nowrap text-blue-600 font-semibold hover:bg-blue-50">
+                  <div className="flex items-center">Experiences {renderSortIcon('experiences')}</div>
                 </th>
 
                 <th onClick={() => onSort('rating')}
-                    className="px-4 py-3 cursor-pointer text-sm font-semibold text-blue-600 whitespace-nowrap hover:bg-blue-50">
-                  <div className="flex items-center">
-                    Rating {renderSortIcon('rating')}
-                  </div>
+                    className="px-4 py-3 cursor-pointer whitespace-nowrap text-blue-600 font-semibold hover:bg-blue-50">
+                  <div className="flex items-center">Rating {renderSortIcon('rating')}</div>
                 </th>
 
                 <th onClick={() => onSort('others')}
-                    className="px-4 py-3 cursor-pointer text-sm font-semibold text-blue-600 whitespace-nowrap hover:bg-blue-50">
-                  <div className="flex items-center">
-                    Others {renderSortIcon('others')}
-                  </div>
+                    className="px-4 py-3 cursor-pointer whitespace-nowrap text-blue-600 font-semibold hover:bg-blue-50">
+                  <div className="flex items-center">Others {renderSortIcon('others')}</div>
                 </th>
 
                 <th onClick={() => onSort('created_at')}
-                    className="px-4 py-3 cursor-pointer text-sm font-semibold text-blue-600 whitespace-nowrap hover:bg-blue-50">
-                  <div className="flex items-center">
-                    Created At {renderSortIcon('created_at')}
-                  </div>
+                    className="px-4 py-3 cursor-pointer whitespace-nowrap text-blue-600 font-semibold hover:bg-blue-50">
+                  <div className="flex items-center">Created At {renderSortIcon('created_at')}</div>
                 </th>
 
               </tr>
             </thead>
 
             <tbody>
-              {paginatedReviews.map((review, i) => (
-                <tr key={review.id}
-                    className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${
-                      i % 2 === 0 ? "bg-white" : "bg-blue-50/30"
+              {paginated.map((r, i) => (
+                <tr key={r.id}
+                    className={`border-b hover:bg-blue-50 transition ${
+                      i % 2 ? "bg-blue-50/20" : "bg-white"
                     }`}>
 
-                  <td className="px-4 py-3 text-sm">{review.name}</td>
-                  <td className="px-4 py-3 text-sm">{review.casino_wallet}</td>
-                  <td className="px-4 py-3 text-sm">{review.games}</td>
-                  <td className="px-4 py-3 text-sm max-w-md">{review.experiences}</td>
-                  <td className="px-4 py-3 text-sm text-yellow-500">{renderStars(review.rating)}</td>
-                  <td className="px-4 py-3 text-sm">{review.others}</td>
-                  <td className="px-4 py-3 text-sm whitespace-nowrap">{review.created_at}</td>
+                  <td className="px-4 py-3">{r.name}</td>
+                  <td className="px-4 py-3">{r.casino_wallet}</td>
+                  <td className="px-4 py-3">{r.games}</td>
+                  <td className="px-4 py-3 max-w-md">{r.experiences}</td>
+                  <td className="px-4 py-3 text-yellow-500">{renderStars(r.rating)}</td>
+                  <td className="px-4 py-3">{r.others}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{r.created_at}</td>
                 </tr>
               ))}
             </tbody>
@@ -156,23 +138,26 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
       </div>
 
       {/* PAGINATION */}
-      {reviews.length > 0 && (
-        <div className="max-w-full bg-white border-t border-gray-200 mt-6 py-4 px-3 
-                        flex flex-col sm:flex-row items-center justify-between gap-4">
+      {!!reviews.length && (
+        <div
+          className="
+            mt-6 bg-white border-t border-gray-200 px-3 py-4 
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          "
+        >
 
-          {/* LEFT: PageSize Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600 text-sm font-medium">Rows:</span>
-
+          {/* ROWS SELECT */}
+          <div className="flex items-center gap-2 justify-center sm:justify-start">
+            <span className="text-sm text-gray-600 font-medium">Rows:</span>
             <select
               value={pageSize}
               onChange={(e) => {
-                setPageSize(parseInt(e.target.value));
+                setPageSize(Number(e.target.value));
                 setCurrentPage(1);
                 scrollToTop();
               }}
-              className="border border-gray-300 rounded-md px-2 py-1 text-sm 
-                        hover:border-blue-500 focus:border-blue-500 focus:ring-0"
+              className="border rounded-md px-2 py-1 text-sm focus:border-blue-500"
             >
               <option value={10}>10</option>
               <option value={20}>20</option>
@@ -180,15 +165,15 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
             </select>
           </div>
 
-          {/* CENTER: Pagination Buttons */}
-          <div className="flex items-center gap-1">
+          {/* PAGINATION BUTTONS */}
+          <div className="flex items-center justify-center gap-1">
 
-            {/* Prev Button */}
+            {/* Prev */}
             <button
               disabled={currentPage === 1}
               onClick={() => { setCurrentPage(p => p - 1); scrollToTop(); }}
-              className={`w-8 h-8 flex items-center justify-center border rounded-md 
-                ${currentPage === 1 
+              className={`w-8 h-8 flex items-center justify-center border rounded-md
+                ${currentPage === 1
                   ? "opacity-40 cursor-not-allowed"
                   : "hover:border-blue-500 hover:text-blue-600"}`
               }
@@ -196,7 +181,7 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
               ‹
             </button>
 
-            {/* First page + leading ellipsis */}
+            {/* 1 ... */}
             {currentPage > 3 && (
               <>
                 <button
@@ -205,29 +190,29 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
                 >
                   1
                 </button>
-                <span className="px-2 text-gray-500">...</span>
+                <span className="text-gray-400 px-1">…</span>
               </>
             )}
 
-            {/* Middle pages */}
-            {visiblePages.map(page => (
+            {/* middle */}
+            {visiblePages.map(p => (
               <button
-                key={page}
-                onClick={() => { setCurrentPage(page); scrollToTop(); }}
-                className={`w-8 h-8 rounded-md border text-sm 
-                  ${page === currentPage
+                key={p}
+                onClick={() => { setCurrentPage(p); scrollToTop(); }}
+                className={`w-8 h-8 rounded-md text-sm border
+                  ${p === currentPage
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "border-gray-300 hover:border-blue-500 hover:text-blue-600"
+                    : "hover:border-blue-500 hover:text-blue-600"
                   }`}
               >
-                {page}
+                {p}
               </button>
             ))}
 
-            {/* Last page + trailing ellipsis */}
+            {/* ... last */}
             {currentPage < totalPages - 2 && (
               <>
-                <span className="px-2 text-gray-500">...</span>
+                <span className="text-gray-400 px-1">…</span>
                 <button
                   onClick={() => { setCurrentPage(totalPages); scrollToTop(); }}
                   className="w-8 h-8 border rounded-md hover:border-blue-500 hover:text-blue-600"
@@ -237,11 +222,11 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
               </>
             )}
 
-            {/* Next Button */}
+            {/* Next */}
             <button
               disabled={currentPage === totalPages}
               onClick={() => { setCurrentPage(p => p + 1); scrollToTop(); }}
-              className={`w-8 h-8 flex items-center justify-center border rounded-md 
+              className={`w-8 h-8 flex items-center justify-center border rounded-md
                 ${currentPage === totalPages
                   ? "opacity-40 cursor-not-allowed"
                   : "hover:border-blue-500 hover:text-blue-600"}`
@@ -251,14 +236,12 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
             </button>
           </div>
 
-          {/* RIGHT: Page Count */}
-          <div className="text-sm text-gray-700 font-medium">
+          {/* PAGE COUNT */}
+          <div className="text-sm text-gray-700 font-medium text-center sm:text-right">
             Page {currentPage} of {totalPages}
           </div>
         </div>
       )}
-
-
     </>
   );
 }
