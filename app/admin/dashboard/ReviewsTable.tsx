@@ -157,108 +157,120 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
 
       {/* PAGINATION */}
       {reviews.length > 0 && (
-        <div className="max-w-full bg-white border-t border-gray-200 mt-6 py-4 px-3 
-                        flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div
+        className="max-w-full bg-white border-t border-gray-200 mt-6 py-4 px-3 
+                    flex flex-col sm:flex-row items-center justify-between gap-4"
+      >
+        {/* LEFT: PageSize Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-gray-600 text-sm font-medium">Rows:</span>
 
-          {/* LEFT: PageSize Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600 text-sm font-medium">Rows:</span>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(parseInt(e.target.value));
+              setCurrentPage(1);
+              scrollToTop();
+            }}
+            className="border border-gray-300 rounded-md px-2 py-1 text-sm 
+                      hover:border-blue-500 focus:border-blue-500 focus:ring-0"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
 
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(parseInt(e.target.value));
-                setCurrentPage(1);
+        {/* RIGHT: Pagination Buttons (桌面端右侧、手机端下方) */}
+        <div className="flex items-center gap-1">
+
+          {/* Prev Button */}
+          <button
+            disabled={currentPage === 1}
+            onClick={() => {
+              setCurrentPage((p) => p - 1);
+              scrollToTop();
+            }}
+            className={`w-8 h-8 flex items-center justify-center border rounded-md 
+              ${
+                currentPage === 1
+                  ? "opacity-40 cursor-not-allowed"
+                  : "hover:border-blue-500 hover:text-blue-600"
+              }`}
+          >
+            ‹
+          </button>
+
+          {/* First page */}
+          {currentPage > 3 && (
+            <>
+              <button
+                onClick={() => {
+                  setCurrentPage(1);
+                  scrollToTop();
+                }}
+                className="w-8 h-8 border rounded-md hover:border-blue-500 hover:text-blue-600"
+              >
+                1
+              </button>
+              <span className="px-2 text-gray-500">...</span>
+            </>
+          )}
+
+          {/* Middle pages */}
+          {visiblePages.map((page) => (
+            <button
+              key={page}
+              onClick={() => {
+                setCurrentPage(page);
                 scrollToTop();
               }}
-              className="border border-gray-300 rounded-md px-2 py-1 text-sm 
-                        hover:border-blue-500 focus:border-blue-500 focus:ring-0"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
-
-          {/* CENTER: Pagination Buttons */}
-          <div className="flex items-center gap-1">
-
-            {/* Prev Button */}
-            <button
-              disabled={currentPage === 1}
-              onClick={() => { setCurrentPage(p => p - 1); scrollToTop(); }}
-              className={`w-8 h-8 flex items-center justify-center border rounded-md 
-                ${currentPage === 1 
-                  ? "opacity-40 cursor-not-allowed"
-                  : "hover:border-blue-500 hover:text-blue-600"}`
-              }
-            >
-              ‹
-            </button>
-
-            {/* First page + leading ellipsis */}
-            {currentPage > 3 && (
-              <>
-                <button
-                  onClick={() => { setCurrentPage(1); scrollToTop(); }}
-                  className="w-8 h-8 border rounded-md hover:border-blue-500 hover:text-blue-600"
-                >
-                  1
-                </button>
-                <span className="px-2 text-gray-500">...</span>
-              </>
-            )}
-
-            {/* Middle pages */}
-            {visiblePages.map(page => (
-              <button
-                key={page}
-                onClick={() => { setCurrentPage(page); scrollToTop(); }}
-                className={`w-8 h-8 rounded-md border text-sm 
-                  ${page === currentPage
+              className={`w-8 h-8 rounded-md border text-sm 
+                ${
+                  page === currentPage
                     ? "bg-blue-600 text-white border-blue-600"
                     : "border-gray-300 hover:border-blue-500 hover:text-blue-600"
-                  }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            {/* Last page + trailing ellipsis */}
-            {currentPage < totalPages - 2 && (
-              <>
-                <span className="px-2 text-gray-500">...</span>
-                <button
-                  onClick={() => { setCurrentPage(totalPages); scrollToTop(); }}
-                  className="w-8 h-8 border rounded-md hover:border-blue-500 hover:text-blue-600"
-                >
-                  {totalPages}
-                </button>
-              </>
-            )}
-
-            {/* Next Button */}
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => { setCurrentPage(p => p + 1); scrollToTop(); }}
-              className={`w-8 h-8 flex items-center justify-center border rounded-md 
-                ${currentPage === totalPages
-                  ? "opacity-40 cursor-not-allowed"
-                  : "hover:border-blue-500 hover:text-blue-600"}`
-              }
+                }`}
             >
-              ›
+              {page}
             </button>
-          </div>
+          ))}
 
-          {/* RIGHT: Page Count */}
-          <div className="text-sm text-gray-700 font-medium">
-            Page {currentPage} of {totalPages}
-          </div>
+          {/* Last page */}
+          {currentPage < totalPages - 2 && (
+            <>
+              <span className="px-2 text-gray-500">...</span>
+              <button
+                onClick={() => {
+                  setCurrentPage(totalPages);
+                  scrollToTop();
+                }}
+                className="w-8 h-8 border rounded-md hover:border-blue-500 hover:text-blue-600"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+
+          {/* Next Button */}
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => {
+              setCurrentPage((p) => p + 1);
+              scrollToTop();
+            }}
+            className={`w-8 h-8 flex items-center justify-center border rounded-md 
+              ${
+                currentPage === totalPages
+                  ? "opacity-40 cursor-not-allowed"
+                  : "hover:border-blue-500 hover:text-blue-600"
+              }`}
+          >
+            ›
+          </button>
         </div>
-      )}
-
-
+      </div>
+    )}
     </>
   );
 }
