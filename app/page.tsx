@@ -55,9 +55,9 @@ export default function Home() {
         <div className="text-center mb-6 sm:mb-8">
           <div className="mb-4 sm:mb-6">
             <Image
-              src="/auth-icon.png"
+              src="/dinosaur.png"
               alt="Admin System Logo"
-              width={80}
+              width={100}
               height={80}
               className="mx-auto rounded-xl"
             />

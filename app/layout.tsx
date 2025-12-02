@@ -22,6 +22,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Review Admin System",
   description: "An admin dashboard for brands to manage, filter, and analyze customer reviews in real time.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
