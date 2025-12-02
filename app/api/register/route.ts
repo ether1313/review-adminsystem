@@ -32,12 +32,14 @@ export async function POST(req: Request) {
       );
     }
 
+    const lowercaseTable = `${brand_name.toLowerCase()}_review`;
+
     const { error } = await supabase.from("brands_credentials").insert([
       {
-        brand_name,
+        brand_name,          // Store brand name as original (capital form)
         username,
         password,
-        review_table: `${brand_name}_reviews`
+        review_table: lowercaseTable,   // Always lowercase + _review
       },
     ]);
 
