@@ -28,7 +28,7 @@ export default function Home() {
   const [regShowPassword, setRegShowPassword] = useState(false);
   const [regShowConfirmPassword, setRegShowConfirmPassword] = useState(false);
 
-  // ✨ 新增：清空 register 表单功能
+  // 清空 register 表单功能
   const resetRegisterForm = () => {
     setBrand("");
     setRegUsername("");
@@ -37,6 +37,11 @@ export default function Home() {
     setRegShowPassword(false);
     setRegShowConfirmPassword(false);
   };
+
+  // Global Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"success" | "error">("success");
 
   // Handle logout success display
   useEffect(() => {
@@ -77,7 +82,9 @@ export default function Home() {
     e.preventDefault();
 
     if (regPassword !== regConfirmPassword) {
-      alert("Passwords do not match");
+      setModalType("error");
+      setModalMessage("Passwords do not match");
+      setShowModal(true);
       return;
     }
 
@@ -97,14 +104,21 @@ export default function Home() {
     setRegLoading(false);
 
     if (!data.success) {
-      alert(data.message || "Failed to register");
+      setModalType("error");
+      setModalMessage(data.message || "Failed to register");
+      setShowModal(true);
       return;
     }
 
     resetRegisterForm();
-    alert("Account created! Please login.");
+
+    setModalType("success");
+    setModalMessage("Account created! Please login.");
+    setShowModal(true);
+
     setShowRegister(false);
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
@@ -343,6 +357,39 @@ export default function Home() {
               </button>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL MODAL UI */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-sm shadow-xl relative">
+            
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+
+            <h2
+              className={`text-lg font-semibold mb-3 ${
+                modalType === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {modalType === "success" ? "Success" : "Error"}
+            </h2>
+
+            <p className="text-gray-700">{modalMessage}</p>
+
+            <button
+              onClick={() => setShowModal(false)}
+              className="w-full mt-5 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+            >
+              OK
+            </button>
+
           </div>
         </div>
       )}

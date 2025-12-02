@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import TopNav from './TopNav';
 import FilterSection from './FilterSection';
@@ -32,6 +32,12 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Notification State
+  const [newReviewNotification, setNewReviewNotification] = useState(false);
+
+  // Sound reference
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // 从 Supabase 拉取对应 table 的数据
   useEffect(() => {
     const loadData = async () => {
@@ -49,12 +55,53 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
     loadData();
   }, [reviewTable]);
 
+  // Realtime subscription for new reviews
+  useEffect(() => {
+    if (!reviewTable) return;
+
+    // 加载音效
+    audioRef.current = new Audio("/message.mp3");
+
+    const channel = supabase
+      .channel(`realtime-${reviewTable}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: reviewTable,
+        },
+        (payload) => {
+          const newReview = payload.new as Review;
+
+          // 新评论插入最前面
+          setReviews((prev) => [newReview, ...prev]);
+
+          // 播放声音
+          if (audioRef.current) {
+            audioRef.current.volume = 1.0;
+            audioRef.current.play().catch(() => {});
+          }
+
+          // 显示顶部绿色提示
+          setNewReviewNotification(true);
+
+          // 3 秒后隐藏
+          setTimeout(() => setNewReviewNotification(false), 3000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [reviewTable]);
+
   // Logout API
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
 
-  // 让 login page 能显示 logout notification
-  localStorage.setItem("logoutSuccess", "true");
+    localStorage.setItem("logoutSuccess", "true");
 
     router.replace("/");
   };
@@ -92,7 +139,6 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
     link.click();
     document.body.removeChild(link);
   };
-
 
   const filteredAndSortedReviews = reviews
     .filter(review => {
@@ -133,6 +179,14 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* 顶部绿色 Notification */}
+      {newReviewNotification && (
+        <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-slide-in z-50">
+          <span className="font-semibold">New review received!</span>
+        </div>
+      )}
+
       <TopNav onLogout={handleLogout} />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-8">
@@ -165,6 +219,24 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
           sortDirection={sortDirection}
         />
       </main>
+
+      {/* Notification Animation Style */}
+      <style>{`
+        .animate-slide-in {
+          animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
