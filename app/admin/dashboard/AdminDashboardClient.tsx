@@ -32,7 +32,7 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(true);
 
-  // ⭐ 从 Supabase 拉取对应 table 的数据
+  // 从 Supabase 拉取对应 table 的数据
   useEffect(() => {
     const loadData = async () => {
       const { data, error } = await supabase
@@ -49,9 +49,13 @@ export default function AdminDashboardClient({ brandName, reviewTable }: any) {
     loadData();
   }, [reviewTable]);
 
-  // ⭐ Logout API
+  // Logout API
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
+
+  // 让 login page 能显示 logout notification
+  localStorage.setItem("logoutSuccess", "true");
+
     router.replace("/");
   };
 
