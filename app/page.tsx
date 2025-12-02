@@ -56,41 +56,35 @@ export default function Home() {
   // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
-    // SUPERADMIN LOGIN
-    if (username === "superadmin" && password === "superadmin888") {
-      // show loading then redirect
-      setShowSuccessNotification(true);
-
-      setTimeout(() => {
-        router.push("/superadmin");
-      }, 800);
-
-      return;
-    }
-
-    // NORMAL BRAND LOGIN (API)
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    // 调用统一 login API（superadmin 也在里面）
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
 
     const data = await res.json();
+    setIsLoading(false);
 
     if (!data.success) {
-      setIsLoading(false);
-      setError('Invalid username or password');
+      setError("Invalid username or password");
       return;
     }
 
+    // 显示成功通知
     setShowSuccessNotification(true);
 
+    // Role-based redirect
     setTimeout(() => {
-      router.push('/admin/dashboard');
-    }, 800);
+      if (data.role === "superadmin") {
+        router.push("/superadmin");
+      } else {
+        router.push("/admin/dashboard");
+      }
+    }, 700);
   };
 
   // Handle Register
