@@ -60,7 +60,6 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
             <thead>
               <tr className="border-b-2 border-blue-500">
 
-                {/* 保持你的原本所有 columns，不做任何改动 */}
                 <th onClick={() => onSort('name')} className="px-3 sm:px-6 py-2.5 sm:py-4 text-left text-xs sm:text-sm font-semibold text-blue-600 cursor-pointer hover:bg-blue-50 whitespace-nowrap">
                   <div className="flex items-center">
                     Name
@@ -137,15 +136,11 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
         )}
       </div>
 
-      {/* 底部固定的 Pagination（新增） */}
+      {/* Pagination — 跟随内容，不固定 */}
       {reviews.length > 0 && (
-        <div className="
-          fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur border-t 
-          border-gray-300 shadow-lg py-4 px-6 z-50 flex flex-col sm:flex-row 
-          sm:items-center sm:justify-between gap-4
-        ">
+        <div className="w-full bg-white border-t border-gray-200 mt-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
           
-          {/* 每页数量 */}
+          {/* Rows per page */}
           <div className="flex items-center gap-3">
             <span className="text-gray-600 text-sm sm:text-base font-medium">Rows:</span>
             <select
@@ -203,6 +198,7 @@ export default function ReviewsTable({ reviews, onSort, sortColumn, sortDirectio
           </div>
         </div>
       )}
+
     </>
   );
 }
