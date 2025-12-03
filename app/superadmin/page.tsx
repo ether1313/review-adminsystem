@@ -29,7 +29,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
+  LineElement
 );
 
 export default function SuperAdminDashboard() {
@@ -114,7 +114,7 @@ export default function SuperAdminDashboard() {
   };
 
   // ============================================
-  // ⭐ BUILD CHART DATA
+  // BUILD CHART DATA
   // ============================================
 
   const brandNames = brandTables.map((b) => b.brand);
@@ -130,13 +130,19 @@ export default function SuperAdminDashboard() {
     return (sum / rows.length).toFixed(2);
   });
 
+  // Different colors for each bar
+  const barColors = [
+    "#4dc9f6", "#f67019", "#f53794", "#537bc4", "#acc236",
+    "#166a8f", "#00a950", "#58595b", "#8549ba", "#e8c547"
+  ];
+
   const barData = {
     labels: brandNames,
     datasets: [
       {
         label: "Total Reviews",
         data: reviewCounts,
-        backgroundColor: "rgba(75, 192, 255, 0.6)",
+        backgroundColor: barColors,
       },
     ],
   };
@@ -145,16 +151,17 @@ export default function SuperAdminDashboard() {
     labels: brandNames,
     datasets: [
       {
-        label: "Average Rating",
+        label: "Average Experience Rating",
         data: avgRatings,
-        backgroundColor: "rgba(255, 159, 64, 0.4)",
-        borderColor: "rgba(255, 159, 64, 1)",
+        backgroundColor: "rgba(54, 162, 235, 0.35)",
+        borderColor: "rgba(54, 162, 235, 1)",
+        borderWidth: 2,
       },
     ],
   };
 
   // ============================================
-  // ⭐ SUMMARY CARD CALCULATIONS
+  // SUMMARY CARD CALCULATIONS
   // ============================================
 
   // Total reviews across all brands
@@ -173,24 +180,20 @@ export default function SuperAdminDashboard() {
     ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2)
     : "0.00";
 
-  // Highest rated brand
-  let highestRatedBrand: any = null;
-  brandTables.forEach((b) => {
-    const rows = allReviews[b.table] || [];
-    if (!rows.length) return;
+  // Rank brands by rating
+  const brandRankings = brandTables
+    .map((b) => {
+      const rows = allReviews[b.table] || [];
+      if (!rows.length) return { brand: b.brand, rating: 0 };
+      const avg =
+        rows.reduce((sum: any, r: any) => sum + r.rating, 0) / rows.length;
+      return { brand: b.brand, rating: avg };
+    })
+    .sort((a, b) => b.rating - a.rating);
 
-    const avg =
-      rows.reduce((sum: any, r: any) => sum + r.rating, 0) / rows.length;
-
-    if (!highestRatedBrand || avg > highestRatedBrand.rating) {
-      highestRatedBrand = { brand: b.brand, rating: avg.toFixed(2) };
-    }
-  });
-
-  // Games 系列 count（品牌名含数字 → 视为 games）
-  const gamesSeriesCount = brandTables.filter((b) =>
-    b.brand.match(/\d/)
-  ).length;
+  const top1 = brandRankings[0];
+  const top2 = brandRankings[1];
+  const top3 = brandRankings[2];
 
   // ============================================
 
@@ -201,49 +204,66 @@ export default function SuperAdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
 
         {/* PAGE TITLE */}
-        <h1 className="text-4xl font-bold mb-6">SuperAdmin Dashboard</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-6">SuperAdmin Dashboard</h1>
 
         {/* =================== SUMMARY CARDS =================== */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
 
-          <div className="p-6 bg-white shadow rounded-xl">
+          <div className="p-5 bg-white shadow rounded-xl">
             <h3 className="text-gray-500 text-sm">Total Reviews (10 Brands)</h3>
-            <p className="text-3xl font-bold mt-2">{totalReviewsAllBrands}</p>
+            <p className="text-2xl md:text-3xl font-bold mt-2">{totalReviewsAllBrands}</p>
           </div>
 
-          <div className="p-6 bg-white shadow rounded-xl">
-            <h3 className="text-gray-500 text-sm">Global Average Rating</h3>
-            <p className="text-3xl font-bold mt-2">{globalAverageRating}</p>
+          <div className="p-5 bg-white shadow rounded-xl">
+            <h3 className="text-gray-500 text-sm">Global Avg Rating</h3>
+            <p className="text-2xl md:text-3xl font-bold mt-2">{globalAverageRating}</p>
           </div>
 
-          <div className="p-6 bg-white shadow rounded-xl">
-            <h3 className="text-gray-500 text-sm">Highest Rated Brand</h3>
-            <p className="text-xl font-semibold mt-2">
-              {highestRatedBrand?.brand || "-"}
-            </p>
-            <p className="text-gray-600 text-sm">
-              Avg Rating: {highestRatedBrand?.rating || "-"}
-            </p>
+          <div className="p-5 bg-white shadow rounded-xl">
+            <h3 className="text-gray-500 text-sm">Top Game</h3>
+            <p className="text-xl font-semibold mt-1">{top1?.brand || "-"}</p>
+            <p className="text-gray-600 text-sm">2nd: {top2?.brand || "-"}</p>
+            <p className="text-gray-600 text-sm">3rd: {top3?.brand || "-"}</p>
           </div>
 
-          <div className="p-6 bg-white shadow rounded-xl">
-            <h3 className="text-gray-500 text-sm">Games 系列 Count</h3>
-            <p className="text-3xl font-bold mt-2">{gamesSeriesCount}</p>
+          <div className="p-5 bg-white shadow rounded-xl">
+            <h3 className="text-gray-500 text-sm">Brands Count</h3>
+            <p className="text-2xl md:text-3xl font-bold mt-2">10</p>
           </div>
 
         </section>
 
         {/* ==================== DATA VISUALIZATION ==================== */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+
           <div className="p-6 bg-white shadow rounded-xl">
-            <h2 className="text-xl font-semibold mb-4">Total Reviews per Brand</h2>
-            <Bar data={barData} />
+            <h2 className="text-lg md:text-xl font-semibold mb-4">
+              Total Reviews per Brand
+            </h2>
+            <Bar
+              data={barData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+              }}
+              height={250}
+            />
           </div>
 
           <div className="p-6 bg-white shadow rounded-xl">
-            <h2 className="text-xl font-semibold mb-4">Average Rating Overview</h2>
-            <Radar data={radarData} />
+            <h2 className="text-lg md:text-xl font-semibold mb-4">
+              Average Experiences Overview
+            </h2>
+            <Radar
+              data={radarData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+              }}
+              height={250}
+            />
           </div>
+
         </section>
 
         {/* ==================== FILTER ==================== */}
@@ -272,8 +292,8 @@ export default function SuperAdminDashboard() {
 
             return (
               <div key={item.table} className="mb-12">
-                <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-2xl font-semibold">{item.brand} Reviews</h2>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-3">
+                  <h2 className="text-xl md:text-2xl font-semibold">{item.brand} Reviews</h2>
 
                   <button
                     onClick={() => exportCSV(item.brand, tableReviews)}
@@ -283,12 +303,14 @@ export default function SuperAdminDashboard() {
                   </button>
                 </div>
 
-                <ReviewsTable
-                  reviews={tableReviews}
-                  onSort={() => {}}
-                  sortColumn={null}
-                  sortDirection="asc"
-                />
+                <div className="bg-white shadow rounded-xl p-3 md:p-5">
+                  <ReviewsTable
+                    reviews={tableReviews}
+                    onSort={() => {}}
+                    sortColumn={null}
+                    sortDirection="asc"
+                  />
+                </div>
               </div>
             );
           })}
