@@ -2,29 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
-// Chart.js
-import {
-  Chart as ChartJS,
-  RadialLinearScale,
-  ArcElement,
-  BarElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-} from "chart.js";
-import { Bar, Radar } from "react-chartjs-2";
-
-ChartJS.register(
-  RadialLinearScale,
-  ArcElement,
-  BarElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale
-);
+// 禁止 SSR 的 Chart 版本
+const Bar = dynamic(() => import("react-chartjs-2").then((m) => m.Bar), {
+  ssr: false,
+});
+const Radar = dynamic(() => import("react-chartjs-2").then((m) => m.Radar), {
+  ssr: false,
+});
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -32,7 +18,21 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [allReviews, setAllReviews] = useState<any[]>([]);
 
-  // All brand tables
+  // 注册 ChartJS：必须放在浏览器端
+  useEffect(() => {
+    const Chart = require("chart.js");
+
+    Chart.Chart.register(
+      Chart.RadialLinearScale,
+      Chart.ArcElement,
+      Chart.BarElement,
+      Chart.Tooltip,
+      Chart.Legend,
+      Chart.CategoryScale,
+      Chart.LinearScale
+    );
+  }, []);
+
   const brandTables = [
     { brand: "iPay9", table: "ipay9_review" },
     { brand: "Kingbet9", table: "kingbet9_review" },
@@ -46,7 +46,6 @@ export default function AnalyticsPage() {
     { brand: "Bybid9", table: "bybid9_review" },
   ];
 
-  // Smart color generator
   function randomColors(len: number): string[] {
     return Array.from({ length: len }, (_, i) => {
       const hue = (i * 36) % 360;
@@ -54,7 +53,6 @@ export default function AnalyticsPage() {
     });
   }
 
-  // Load review data
   useEffect(() => {
     async function load() {
       let all: any[] = [];
@@ -88,25 +86,22 @@ export default function AnalyticsPage() {
       </div>
     );
 
-  // -----------------------------------------
-  // Computations
-  // -----------------------------------------
-
-  // Rating Distribution (Radar)
+  // 计算 rating
   const ratingCount = [1, 2, 3, 4, 5].map(
     (star) => allReviews.filter((r) => r.rating === star).length
   );
 
-  // Reviews Per Brand
+  // per brand
   const brandCount = brandTables.map((b) => ({
     brand: b.brand,
     count: allReviews.filter((r) => r.brand === b.brand).length,
   }));
 
-  // Games Count
+  // games
   const gameMap: Record<string, number> = {};
-  allReviews.forEach((r) => {
+  allReviews.forEach((r: any) => {
     if (!r.games) return;
+
     r.games
       .split(",")
       .map((g: string) => g.trim())
@@ -119,10 +114,11 @@ export default function AnalyticsPage() {
   const gamesLabels = Object.keys(gameMap);
   const gamesValues = Object.values(gameMap);
 
-  // Experiences Count
+  // experiences
   const expMap: Record<string, number> = {};
-  allReviews.forEach((r) => {
+  allReviews.forEach((r: any) => {
     if (!r.experiences) return;
+
     r.experiences
       .split(",")
       .map((e: string) => e.trim())
@@ -135,13 +131,8 @@ export default function AnalyticsPage() {
   const expLabels = Object.keys(expMap);
   const expValues = Object.values(expMap);
 
-  // -----------------------------------------
-  // JSX Layout
-  // -----------------------------------------
-
   return (
     <div className="min-h-screen bg-gray-50 p-5 sm:p-10">
-      {/* Top Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold">Analytics Dashboard</h1>
 
@@ -153,9 +144,9 @@ export default function AnalyticsPage() {
         </button>
       </div>
 
-      {/* GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Radar Chart */}
+
+        {/* Rating Radar */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Rating Distribution</h2>
           <Radar
@@ -167,14 +158,13 @@ export default function AnalyticsPage() {
                   data: ratingCount,
                   backgroundColor: "rgba(99,102,241,0.3)",
                   borderColor: "rgb(99,102,241)",
-                  borderWidth: 2,
                 },
               ],
             }}
           />
         </div>
 
-        {/* Bar - Brand Reviews */}
+        {/* Brand */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Reviews per Brand</h2>
           <Bar
@@ -191,7 +181,7 @@ export default function AnalyticsPage() {
           />
         </div>
 
-        {/* Bar - Games Count */}
+        {/* Games */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Games Count</h2>
           <Bar
@@ -208,7 +198,7 @@ export default function AnalyticsPage() {
           />
         </div>
 
-        {/* Bar - Experiences Count */}
+        {/* Experiences */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Experiences Count</h2>
           <Bar
@@ -224,6 +214,7 @@ export default function AnalyticsPage() {
             }}
           />
         </div>
+
       </div>
     </div>
   );

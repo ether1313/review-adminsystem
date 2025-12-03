@@ -2,37 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
+import ReviewsTable from "../admin/dashboard/ReviewsTable";
+import TopNav from "../admin/dashboard/TopNav";
 
-// 禁止 SSR 的 Chart 版本
-const Bar = dynamic(() => import("react-chartjs-2").then((m) => m.Bar), {
-  ssr: false,
-});
-const Radar = dynamic(() => import("react-chartjs-2").then((m) => m.Radar), {
-  ssr: false,
-});
-
-export default function AnalyticsPage() {
+export default function SuperAdminDashboard() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [allReviews, setAllReviews] = useState<any[]>([]);
+  const [allReviews, setAllReviews] = useState<any>({});
+  const [filterRating, setFilterRating] = useState("all");
 
-  // 注册 ChartJS：必须放在浏览器端
-  useEffect(() => {
-    const Chart = require("chart.js");
-
-    Chart.Chart.register(
-      Chart.RadialLinearScale,
-      Chart.ArcElement,
-      Chart.BarElement,
-      Chart.Tooltip,
-      Chart.Legend,
-      Chart.CategoryScale,
-      Chart.LinearScale
-    );
-  }, []);
-
+  // 10 个品牌及其表名
   const brandTables = [
     { brand: "iPay9", table: "ipay9_review" },
     { brand: "Kingbet9", table: "kingbet9_review" },
@@ -46,176 +26,161 @@ export default function AnalyticsPage() {
     { brand: "Bybid9", table: "bybid9_review" },
   ];
 
-  function randomColors(len: number): string[] {
-    return Array.from({ length: len }, (_, i) => {
-      const hue = (i * 36) % 360;
-      return `hsl(${hue}, 82%, 55%)`;
-    });
-  }
+  // superadmin logout
+  const handleLogout = async () => {
+    await fetch("/api/logout", { method: "POST" });
+    localStorage.setItem("logoutSuccess", "true");
+    router.replace("/");
+  };
 
+  // 验证 superadmin
   useEffect(() => {
-    async function load() {
-      let all: any[] = [];
+    async function verify() {
+      const res = await fetch("/api/check-superadmin", {
+        cache: "no-store",
+      });
 
-      for (const item of brandTables) {
-        const res = await fetch(`/api/get-table?table=${item.table}`, {
-          cache: "no-store",
-        });
+      const data = await res.json();
 
-        const data = await res.json();
-
-        const mapped = (data.reviews || []).map((r: any) => ({
-          ...r,
-          brand: item.brand,
-        }));
-
-        all.push(...mapped);
+      if (!data.superadmin) {
+        router.replace("/");
+        return;
       }
 
-      setAllReviews(all);
-      setLoading(false);
+      loadAllTables();
     }
 
-    load();
+    verify();
   }, []);
 
-  if (loading)
-    return (
-      <div className="p-10 text-center text-xl font-medium">
-        Loading analytics...
-      </div>
+  // 加载全部 tables
+  async function loadAllTables() {
+    let results: any = {};
+
+    for (const item of brandTables) {
+      const res = await fetch(`/api/get-table?table=${item.table}`, {
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+      results[item.table] = data.reviews || [];
+    }
+
+    setAllReviews(results);
+    setLoading(false);
+  }
+
+  const filterReviews = (reviews: any[]) => {
+    if (filterRating === "all") return reviews;
+    return reviews.filter((r: any) => r.rating === Number(filterRating));
+  };
+
+  const exportCSV = (brand: string, rows: any[]) => {
+    if (!rows.length) return;
+
+    const header = Object.keys(rows[0]).join(",");
+    const body = rows.map((r) =>
+      Object.values(r)
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(",")
     );
 
-  // 计算 rating
-  const ratingCount = [1, 2, 3, 4, 5].map(
-    (star) => allReviews.filter((r) => r.rating === star).length
-  );
+    const csv = [header, ...body].join("\n");
 
-  // per brand
-  const brandCount = brandTables.map((b) => ({
-    brand: b.brand,
-    count: allReviews.filter((r) => r.brand === b.brand).length,
-  }));
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
 
-  // games
-  const gameMap: Record<string, number> = {};
-  allReviews.forEach((r: any) => {
-    if (!r.games) return;
-
-    r.games
-      .split(",")
-      .map((g: string) => g.trim())
-      .forEach((g: string) => {
-        if (!gameMap[g]) gameMap[g] = 0;
-        gameMap[g]++;
-      });
-  });
-
-
-  const gamesLabels = Object.keys(gameMap);
-  const gamesValues = Object.values(gameMap);
-
-  // experiences
-  const expMap: Record<string, number> = {};
-  allReviews.forEach((r: any) => {
-    if (!r.experiences) return;
-
-    r.experiences
-      .split(",")
-      .map((e: string) => e.trim())
-      .forEach((e: string) => {
-        if (!expMap[e]) expMap[e] = 0;
-        expMap[e]++;
-      });
-  });
-
-  const expLabels = Object.keys(expMap);
-  const expValues = Object.values(expMap);
+    link.href = URL.createObjectURL(blob);
+    link.download = `${brand}_reviews.csv`;
+    link.click();
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5 sm:p-10">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold">Analytics Dashboard</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* 顶部导航栏 */}
+      <TopNav onLogout={handleLogout} />
 
-        <button
-          onClick={() => router.push("/superadmin")}
-          className="bg-gray-800 text-white px-4 py-2 rounded-lg shadow hover:bg-gray-900"
-        >
-          ← Back
-        </button>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* ========== HEADER（Responsive） ========== */}
+        <div className="flex items-center justify-between mb-6">
+          {/* SuperAdmin 标题 */}
+          <h1 className="text-4xl font-bold">SuperAdmin</h1>
 
-        {/* Rating Radar */}
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-4">Rating Distribution</h2>
-          <Radar
-            data={{
-              labels: ["⭐1", "⭐2", "⭐3", "⭐4", "⭐5"],
-              datasets: [
-                {
-                  label: "Count",
-                  data: ratingCount,
-                  backgroundColor: "rgba(99,102,241,0.3)",
-                  borderColor: "rgb(99,102,241)",
-                },
-              ],
-            }}
-          />
+          {/* Desktop Button */}
+          <button
+            onClick={() => router.push("/superadmin/analytics")}
+            className="
+              hidden sm:flex 
+              bg-purple-600 hover:bg-purple-700 
+              text-white px-4 py-2 rounded-md
+              font-semibold shadow-md
+            "
+          >
+            Analytics
+          </button>
+
+          {/* Mobile Minimalist Button */}
+          <button
+            onClick={() => router.push("/superadmin/analytics")}
+            className="
+              sm:hidden 
+              bg-purple-600 hover:bg-purple-700
+              text-white px-3 py-2 rounded-lg
+              font-semibold shadow-md
+            "
+          >
+            Analytics
+          </button>
         </div>
 
-        {/* Brand */}
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-4">Reviews per Brand</h2>
-          <Bar
-            data={{
-              labels: brandCount.map((b) => b.brand),
-              datasets: [
-                {
-                  label: "Reviews",
-                  data: brandCount.map((b) => b.count),
-                  backgroundColor: randomColors(brandCount.length),
-                },
-              ],
-            }}
-          />
+        {/* ========== FILTER SECTION ========== */}
+        <div className="mb-6">
+          <label className="text-gray-700 font-medium mr-3">
+            Filter rating:
+          </label>
+          <select
+            className="border px-3 py-2 rounded-lg"
+            value={filterRating}
+            onChange={(e) => setFilterRating(e.target.value)}
+          >
+            <option value="all">All Ratings</option>
+            <option value="5">★★★★★</option>
+            <option value="4">★★★★</option>
+            <option value="3">★★★</option>
+            <option value="2">★★</option>
+            <option value="1">★</option>
+          </select>
         </div>
 
-        {/* Games */}
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-4">Games Count</h2>
-          <Bar
-            data={{
-              labels: gamesLabels,
-              datasets: [
-                {
-                  label: "Count",
-                  data: gamesValues,
-                  backgroundColor: randomColors(gamesValues.length),
-                },
-              ],
-            }}
-          />
-        </div>
+        {loading && <p>Loading all tables...</p>}
 
-        {/* Experiences */}
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-4">Experiences Count</h2>
-          <Bar
-            data={{
-              labels: expLabels,
-              datasets: [
-                {
-                  label: "Count",
-                  data: expValues,
-                  backgroundColor: randomColors(expValues.length),
-                },
-              ],
-            }}
-          />
-        </div>
+        {!loading &&
+          brandTables.map((item) => {
+            const tableReviews = filterReviews(allReviews[item.table] || []);
 
+            return (
+              <div key={item.table} className="mb-12">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-2xl font-semibold">{item.brand} Reviews</h2>
+
+                  <button
+                    onClick={() => exportCSV(item.brand, tableReviews)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                  >
+                    Export CSV
+                  </button>
+                </div>
+
+                <ReviewsTable
+                  reviews={tableReviews}
+                  onSort={() => {}}
+                  sortColumn={null}
+                  sortDirection="asc"
+                />
+              </div>
+            );
+          })}
       </div>
     </div>
   );
