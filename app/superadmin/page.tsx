@@ -103,7 +103,14 @@ export default function SuperAdminDashboard() {
       <TopNav onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
-        <h1 className="text-3xl font-bold mb-6">SuperAdmin Review Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-6">⭐SuperAdmin⭐</h1>
+
+        <button
+            onClick={() => router.push("/superadmin/analytics")}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+        >
+            Analytics Dashboard
+        </button>
 
         {/* Filter */}
         <div className="mb-6">
