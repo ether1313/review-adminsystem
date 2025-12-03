@@ -1,17 +1,39 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
-} from "recharts";
+import { useRouter } from "next/navigation";
 
-export default function AnalyticsDashboard() {
+// Chart.js imports
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  ArcElement,
+  BarElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale
+} from "chart.js";
+import { Bar, Radar } from "react-chartjs-2";
+
+// Register chart.js components
+ChartJS.register(
+  RadialLinearScale,
+  ArcElement,
+  BarElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale
+);
+
+export default function AnalyticsPage() {
   const router = useRouter();
+
   const [loading, setLoading] = useState(true);
   const [allReviews, setAllReviews] = useState<any[]>([]);
 
+  // Brand + Table map
   const brandTables = [
     { brand: "iPay9", table: "ipay9_review" },
     { brand: "Kingbet9", table: "kingbet9_review" },
@@ -25,198 +47,184 @@ export default function AnalyticsDashboard() {
     { brand: "Bybid9", table: "bybid9_review" },
   ];
 
+  // Load all tables
   useEffect(() => {
-    loadAll();
-  }, []);
+    async function load() {
+      let all: any[] = [];
 
-  async function loadAll() {
-    let loaded: any[] = [];
+      for (const item of brandTables) {
+        const res = await fetch(`/api/get-table?table=${item.table}`, { cache: "no-store" });
+        const data = await res.json();
 
-    for (const item of brandTables) {
-      const res = await fetch(`/api/get-table?table=${item.table}`, { cache: "no-store" });
-      const data = await res.json();
-      const reviews = data.reviews || [];
-
-      loaded.push(
-        ...reviews.map((r: any) => ({
+        const mapped = (data.reviews || []).map((r: any) => ({
           ...r,
           brand: item.brand,
-        }))
-      );
+        }));
+
+        all.push(...mapped);
+      }
+
+      setAllReviews(all);
+      setLoading(false);
     }
 
-    setAllReviews(loaded);
-    setLoading(false);
-  }
+    load();
+  }, []);
 
-  // -----------------------
-  // Rating Count → Radar Chart
-  // -----------------------
-  const ratingRadarData = [1, 2, 3, 4, 5].map((num) => ({
-    rating: `${num}★`,
-    count: allReviews.filter((r) => r.rating === num).length,
-  }));
+  if (loading)
+    return (
+      <div className="p-10 text-center text-xl font-medium">Loading analytics...</div>
+    );
 
-  // -----------------------
-  // Brand Review Count → Bar Chart
-  // -----------------------
-  const brandBarData = brandTables.map((b) => ({
+  // -----------------------------
+  // CALCULATIONS
+  // -----------------------------
+
+  // Rating distribution
+  const ratingCount = [1, 2, 3, 4, 5].map(
+    (star) => allReviews.filter((r) => r.rating === star).length
+  );
+
+  // Brand review count
+  const brandCount = brandTables.map((b) => ({
     brand: b.brand,
     count: allReviews.filter((r) => r.brand === b.brand).length,
   }));
 
-  // -----------------------
-  // Games Count → Bar Chart
-  // -----------------------
-  const gameCountMap: any = {};
-
+  // Games Count
+  const gameMap: Record<string, number> = {};
   allReviews.forEach((r) => {
-    if (!r.games) return;
-    const arr = r.games.split(",").map((x: string) => x.trim());
-    arr.forEach((g: string) => {
-      if (!g) return;
-      gameCountMap[g] = (gameCountMap[g] || 0) + 1;
-    });
+    r.games
+      .split(",")
+      .map((g: string) => g.trim())
+      .forEach((g: string) => {
+        if (!gameMap[g]) gameMap[g] = 0;
+        gameMap[g]++;
+      });
   });
+  const gamesLabels = Object.keys(gameMap);
+  const gamesValues = Object.values(gameMap);
 
-  const gamesBarData = Object.keys(gameCountMap).map((g) => ({
-    game: g,
-    count: gameCountMap[g],
-  }));
-
-  // -----------------------
-  // Experiences Count → Bar Chart
-  // -----------------------
-  const expCountMap: any = {};
-
+  // Experiences Count
+  const expMap: Record<string, number> = {};
   allReviews.forEach((r) => {
-    if (!r.experiences) return;
-    const arr = r.experiences.split(",").map((x: string) => x.trim());
-    arr.forEach((e: string) => {
-      if (!e) return;
-      expCountMap[e] = (expCountMap[e] || 0) + 1;
-    });
+    r.experiences
+      .split(",")
+      .map((e: string) => e.trim())
+      .forEach((e: string) => {
+        if (!expMap[e]) expMap[e] = 0;
+        expMap[e]++;
+      });
   });
+  const expLabels = Object.keys(expMap);
+  const expValues = Object.values(expMap);
 
-  const expBarData = Object.keys(expCountMap).map((e) => ({
-    exp: e,
-    count: expCountMap[e],
-  }));
+  // Random color generator
+  const randomColors = (len: number) =>
+    Array.from({ length: len }, () =>
+      `hsl(${Math.floor(Math.random() * 360)}, 85%, 55%)`
+    );
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6">
+    <div className="min-h-screen bg-gray-50 p-5 sm:p-10">
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold flex items-center gap-2">
           Analytics Dashboard
         </h1>
 
         <button
           onClick={() => router.push("/superadmin")}
-          className="bg-gray-800 text-white px-5 py-3 rounded-xl shadow hover:bg-gray-900"
+          className="bg-gray-800 text-white px-4 py-2 rounded-lg shadow hover:bg-gray-900"
         >
           ← Back
         </button>
       </div>
 
-      {loading && <p>Loading...</p>}
+      {/* Responsive Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-      {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {/* Radar Chart */}
-          <div className="bg-white rounded-2xl p-6 shadow">
-            <h2 className="text-xl font-semibold mb-4">Rating Distribution (Radar)</h2>
-
-            <ResponsiveContainer width="100%" height={350}>
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={ratingRadarData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="rating" />
-                <PolarRadiusAxis angle={30} domain={[0, "auto"]} />
-                <Radar
-                  name="Ratings"
-                  dataKey="count"
-                  stroke="#3A0CA3"
-                  fill="#7209B7"
-                  fillOpacity={0.7}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-
-            <ul className="mt-4 space-y-1 text-gray-700">
-              {ratingRadarData.map((d) => (
-                <li key={d.rating}>
-                  {d.rating}: {d.count}
-                </li>
-              ))}
-            </ul>
+        {/* Rating Radar Chart */}
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-xl font-semibold mb-4">Rating Distribution</h2>
+          <Radar
+            data={{
+              labels: ["⭐1", "⭐2", "⭐3", "⭐4", "⭐5"],
+              datasets: [
+                {
+                  label: "Count",
+                  data: ratingCount,
+                  backgroundColor: "rgba(99,102,241,0.3)",
+                  borderColor: "rgb(99,102,241)",
+                  borderWidth: 2,
+                },
+              ],
+            }}
+            options={{ responsive: true }}
+          />
+          <div className="mt-4 text-sm text-gray-700">
+            {ratingCount.map((v, i) => (
+              <p key={i}>⭐{i + 1}: {v}</p>
+            ))}
           </div>
-
-          {/* Brand Count */}
-          <div className="bg-white rounded-2xl p-6 shadow">
-            <h2 className="text-xl font-semibold mb-4">Brand Review Count (Bar)</h2>
-
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={brandBarData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="brand" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#4361EE" />
-              </BarChart>
-            </ResponsiveContainer>
-
-            <ul className="mt-4 space-y-1 text-gray-700">
-              {brandBarData.map((d) => (
-                <li key={d.brand}>{d.brand}: {d.count}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Games Count */}
-          <div className="bg-white rounded-2xl p-6 shadow">
-            <h2 className="text-xl font-semibold mb-4">Games Count (Bar)</h2>
-
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={gamesBarData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="game" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#FF6B6B" />
-              </BarChart>
-            </ResponsiveContainer>
-
-            <ul className="mt-4 space-y-1 text-gray-700">
-              {gamesBarData.map((d) => (
-                <li key={d.game}>{d.game}: {d.count}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Experiences Count */}
-          <div className="bg-white rounded-2xl p-6 shadow">
-            <h2 className="text-xl font-semibold mb-4">Experiences Count (Bar)</h2>
-
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={expBarData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="exp" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#FFA600" />
-              </BarChart>
-            </ResponsiveContainer>
-
-            <ul className="mt-4 space-y-1 text-gray-700">
-              {expBarData.map((d) => (
-                <li key={d.exp}>{d.exp}: {d.count}</li>
-              ))}
-            </ul>
-          </div>
-
         </div>
-      )}
+
+        {/* Brand Review Count */}
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-xl font-semibold mb-4">Reviews per Brand</h2>
+          <Bar
+            data={{
+              labels: brandCount.map((b) => b.brand),
+              datasets: [
+                {
+                  label: "Reviews",
+                  data: brandCount.map((b) => b.count),
+                  backgroundColor: randomColors(brandCount.length),
+                },
+              ],
+            }}
+            options={{ responsive: true }}
+          />
+        </div>
+
+        {/* Games Count */}
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-xl font-semibold mb-4">Games Count</h2>
+          <Bar
+            data={{
+              labels: gamesLabels,
+              datasets: [
+                {
+                  label: "Count",
+                  data: gamesValues,
+                  backgroundColor: randomColors(gamesValues.length),
+                },
+              ],
+            }}
+            options={{ responsive: true }}
+          />
+        </div>
+
+        {/* Experiences Count */}
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-xl font-semibold mb-4">Experiences Count</h2>
+          <Bar
+            data={{
+              labels: expLabels,
+              datasets: [
+                {
+                  label: "Count",
+                  data: expValues,
+                  backgroundColor: randomColors(expValues.length),
+                },
+              ],
+            }}
+            options={{ responsive: true }}
+          />
+        </div>
+
+      </div>
     </div>
   );
 }

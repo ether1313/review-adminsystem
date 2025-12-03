@@ -26,13 +26,11 @@ export default function SuperAdminDashboard() {
     { brand: "Bybid9", table: "bybid9_review" },
   ];
 
-  // superadmin logout（真正安全）
+  // superadmin logout
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
-
     localStorage.setItem("logoutSuccess", "true");
-
-    router.replace("/"); // replace 可阻挡浏览器 back
+    router.replace("/");
   };
 
   // 验证 superadmin
@@ -103,55 +101,56 @@ export default function SuperAdminDashboard() {
       <TopNav onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
-        <h1 className="text-4xl font-bold mb-6 flex items-center gap-3">
-        <span>SuperAdmin</span>
 
-        {/* Desktop button */}
-        <div className="hidden sm:block">
-            <button
+        {/* ========== HEADER（Responsive） ========== */}
+        <div className="flex items-center justify-between mb-6">
+          {/* SuperAdmin 标题 */}
+          <h1 className="text-4xl font-bold">SuperAdmin</h1>
+
+          {/* Desktop Button */}
+          <button
             onClick={() => router.push("/superadmin/analytic")}
             className="
-                bg-purple-600 text-white font-semibold 
-                px-5 py-2 rounded-xl shadow-md hover:bg-purple-700
-                flex items-center gap-2
+              hidden sm:flex 
+              bg-purple-600 hover:bg-purple-700 
+              text-white px-4 py-2 rounded-xl
+              font-semibold shadow-md
             "
-            >
+          >
             Analytics Dashboard
-            </button>
-        </div>
-        </h1>
+          </button>
 
-        {/* Mobile 按钮（整行） */}
-        <div className="sm:hidden mb-4">
-        <button
+          {/* Mobile Minimalist Button */}
+          <button
             onClick={() => router.push("/superadmin/analytic")}
             className="
-            bg-purple-600 text-white font-semibold 
-            px-5 py-3 rounded-xl shadow-md hover:bg-purple-700
-            w-full flex items-center justify-center gap-2
+              sm:hidden 
+              bg-purple-600 hover:bg-purple-700
+              text-white px-3 py-2 rounded-lg
+              font-semibold shadow-md
             "
-        >
-            Analytics Dashboard
-        </button>
+          >
+            Analytics
+          </button>
         </div>
 
-        {/* Filter */}
+        {/* ========== FILTER SECTION ========== */}
         <div className="mb-6">
-        <label className="text-gray-700 font-medium mr-3">
+          <label className="text-gray-700 font-medium mr-3">
             Filter rating:
-        </label>
-        <select
+          </label>
+          <select
             className="border px-3 py-2 rounded-lg"
             value={filterRating}
             onChange={(e) => setFilterRating(e.target.value)}
-        >
+          >
             <option value="all">All Ratings</option>
             <option value="5">★★★★★</option>
             <option value="4">★★★★</option>
             <option value="3">★★★</option>
             <option value="2">★★</option>
             <option value="1">★</option>
-        </select>
+          </select>
         </div>
 
         {loading && <p>Loading all tables...</p>}
