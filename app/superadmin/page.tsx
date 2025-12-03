@@ -122,7 +122,7 @@ export default function SuperAdminDashboard() {
 
           {/* Mobile Minimalist Button */}
           <button
-            onClick={() => router.push("/superadmin/analytic")}
+            onClick={() => router.push("/superadmin/analytics")}
             className="
               sm:hidden 
               bg-purple-600 hover:bg-purple-700
