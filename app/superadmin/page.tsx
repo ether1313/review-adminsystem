@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import ReviewsTable from "../admin/dashboard/ReviewsTable";
 import TopNav from "../admin/dashboard/TopNav";
@@ -40,6 +40,7 @@ export default function SuperAdminDashboard() {
   const [allReviews, setAllReviews] = useState<any>({});
   const [filterRating, setFilterRating] = useState("all");
 
+  // 10 Brands
   const brandTables = [
     { brand: "iPay9", table: "ipay9_review" },
     { brand: "Kingbet9", table: "kingbet9_review" },
@@ -53,14 +54,14 @@ export default function SuperAdminDashboard() {
     { brand: "Bybid9", table: "bybid9_review" },
   ];
 
-  // LOGOUT
+  // Logout
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
     localStorage.setItem("logoutSuccess", "true");
     router.replace("/");
   };
 
-  // VERIFY SUPERADMIN
+  // Verify Superadmin
   useEffect(() => {
     async function verify() {
       const res = await fetch("/api/check-superadmin", { cache: "no-store" });
@@ -75,7 +76,7 @@ export default function SuperAdminDashboard() {
     verify();
   }, []);
 
-  // LOAD ALL BRAND TABLES
+  // Load All Tables
   async function loadAllTables() {
     let results: any = {};
 
@@ -91,13 +92,13 @@ export default function SuperAdminDashboard() {
     setLoading(false);
   }
 
-  // FILTER REVIEWS
+  // Filter Rating
   const filterReviews = (reviews: any[]) => {
     if (filterRating === "all") return reviews;
     return reviews.filter((r: any) => r.rating === Number(filterRating));
   };
 
-  // EXPORT CSV
+  // Export CSV
   const exportCSV = (brand: string, rows: any[]) => {
     if (!rows.length) return;
     const header = Object.keys(rows[0]).join(",");
@@ -115,16 +116,104 @@ export default function SuperAdminDashboard() {
     link.click();
   };
 
-  // ============================================================
-  // SUMMARY CALCULATIONS
-  // ============================================================
+  // =======================================
+  // Summary Calculations
+  // =======================================
 
   const brandNames = brandTables.map((b) => b.brand);
-  const reviewCounts = brandTables.map(
-    (b) => allReviews[b.table]?.length || 0
-  );
+  const reviewCounts = brandTables.map((b) => allReviews[b.table]?.length || 0);
 
-  // Colors for brand bars
+  const totalReviewsAllBrands = reviewCounts.reduce((a, b) => a + b, 0);
+
+  // Global Average Rating
+  let allRatings: number[] = [];
+  brandTables.forEach((b) => {
+    (allReviews[b.table] || []).forEach((r: any) => allRatings.push(r.rating));
+  });
+
+  const globalAverageRating = allRatings.length
+    ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2)
+    : "0.00";
+
+  // Highest Rated Brands Sorting
+  const sortedBrands = brandTables
+    .map((b) => {
+      const rows = allReviews[b.table] || [];
+      if (!rows.length) return null;
+      const avg =
+        rows.reduce((sum: number, r: any) => sum + r.rating, 0) / rows.length;
+      return { brand: b.brand, rating: avg };
+    })
+    .filter(Boolean)
+    .sort((a: any, b: any) => b.rating - a.rating);
+
+  const top1 = sortedBrands[0] || null;
+
+  // =======================================
+  // Top Games Frequency (全站)
+  // =======================================
+  const topGame = useMemo(() => {
+    let freq: any = {};
+
+    brandTables.forEach((b) => {
+      const rows = allReviews[b.table] || [];
+      rows.forEach((r: any) => {
+        if (r.games) {
+          r.games.split(",").forEach((g: string) => {
+            const key = g.trim();
+            if (key) freq[key] = (freq[key] || 0) + 1;
+          });
+        }
+      });
+    });
+
+    const top = Object.entries(freq).sort((a: any, b: any) => b[1] - a[1])[0];
+    return top ? `${top[0]} (${top[1]})` : "-";
+  }, [allReviews]);
+
+  // =======================================
+  // Experiences Frequency → Radar Chart
+  // =======================================
+  const experienceRadar = useMemo(() => {
+    let freq: any = {};
+
+    brandTables.forEach((b) => {
+      const rows = allReviews[b.table] || [];
+
+      rows.forEach((r: any) => {
+        if (!r.experiences) return;
+
+        r.experiences.split(",").forEach((exp: string) => {
+          const key = exp.trim();
+          if (key) freq[key] = (freq[key] || 0) + 1;
+        });
+      });
+    });
+
+    const sorted = Object.entries(freq).sort((a: any, b: any) => b[1] - a[1]);
+    const top10 = sorted.slice(0, 10);
+
+    return {
+      labels: top10.map((x) => x[0]),
+      data: top10.map((x) => x[1]),
+    };
+  }, [allReviews]);
+
+  const radarData = {
+    labels: experienceRadar.labels,
+    datasets: [
+      {
+        label: "Experiences Frequency",
+        data: experienceRadar.data,
+        backgroundColor: "rgba(75, 192, 255, 0.25)",
+        borderColor: "rgba(75, 192, 255, 1)",
+        borderWidth: 2,
+        pointBackgroundColor: "rgba(75, 192, 255, 1)",
+      },
+    ],
+  };
+
+  // Brand Colors for Bar Chart
   const brandColors = [
     "#4dc9f6",
     "#f67019",
@@ -138,14 +227,6 @@ export default function SuperAdminDashboard() {
     "#ffa600",
   ];
 
-  const avgRatings = brandTables.map((b) => {
-    const rows = allReviews[b.table] || [];
-    if (!rows.length) return 0;
-    const sum = rows.reduce((acc: any, r: any) => acc + r.rating, 0);
-    return Number((sum / rows.length).toFixed(2));
-  });
-
-  // Bar chart data
   const barData = {
     labels: brandNames,
     datasets: [
@@ -157,63 +238,25 @@ export default function SuperAdminDashboard() {
     ],
   };
 
-  // Radar chart data
-  const radarData = {
-    labels: brandNames,
-    datasets: [
-      {
-        label: "Average Experiences Score",
-        data: avgRatings,
-        backgroundColor: "rgba(75, 192, 255, 0.25)",
-        borderColor: "rgba(75, 192, 255, 1)",
-      },
-    ],
-  };
-
-  // Summary — Total reviews
-  const totalReviewsAllBrands = reviewCounts.reduce((a, b) => a + b, 0);
-
-  // Summary — Global average rating
-  let allRatings: number[] = [];
-  brandTables.forEach((b) => {
-    (allReviews[b.table] || []).forEach((r: any) =>
-      allRatings.push(r.rating)
-    );
-  });
-
-  const globalAverageRating = allRatings.length
-    ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2)
-    : "0.00";
-
-  // Summary — Highest rated brand
-  const sortedBrands = brandTables
-    .map((b) => {
-      const rows = allReviews[b.table] || [];
-      if (!rows.length) return null;
-      const avg =
-        rows.reduce((sum: any, r: any) => sum + r.rating, 0) / rows.length;
-      return { brand: b.brand, rating: avg };
-    })
-    .filter(Boolean)
-    .sort((a: any, b: any) => b.rating - a.rating);
-
-  const top1 = sortedBrands[0] || null;
-  const top2 = sortedBrands[1] || null;
-  const top3 = sortedBrands[2] || null;
-
-  // ============================================================
+  // =======================================
+  // Render Start
+  // =======================================
 
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
+        {/* PAGE TITLE */}
         <h1 className="text-3xl md:text-4xl font-bold mb-6">
           SuperAdmin Dashboard
         </h1>
 
-        {/* =================== SUMMARY CARDS =================== */}
+        {/* =================================================== */}
+        {/* SUMMARY CARDS */}
+        {/* =================================================== */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
+          {/* Total Reviews */}
           <div className="p-5 bg-white shadow-sm border rounded-xl">
             <h3 className="text-gray-500 text-xs md:text-sm">Total Reviews</h3>
             <p className="text-2xl md:text-3xl font-bold mt-2">
@@ -221,6 +264,7 @@ export default function SuperAdminDashboard() {
             </p>
           </div>
 
+          {/* Global Avg Rating */}
           <div className="p-5 bg-white shadow-sm border rounded-xl">
             <h3 className="text-gray-500 text-xs md:text-sm">
               Global Average Rating
@@ -230,6 +274,7 @@ export default function SuperAdminDashboard() {
             </p>
           </div>
 
+          {/* Highest Rated Brand */}
           <div className="p-5 bg-white shadow-sm border rounded-xl">
             <h3 className="text-gray-500 text-xs md:text-sm">
               Highest Rated Brand
@@ -240,24 +285,25 @@ export default function SuperAdminDashboard() {
             </p>
           </div>
 
+          {/* Top Games Frequency */}
           <div className="p-5 bg-white shadow-sm border rounded-xl">
             <h3 className="text-gray-500 text-xs md:text-sm">
-              Top Games Rated
+              Top Games Frequency
             </h3>
-            <p className="text-base font-semibold mt-1">
-              2nd: {top2?.brand || "-"}
-            </p>
-            <p className="text-base font-semibold">3rd: {top3?.brand || "-"}</p>
+            <p className="text-lg font-semibold mt-1">{topGame}</p>
           </div>
         </section>
 
-        {/* ==================== CHARTS ==================== */}
+        {/* =================================================== */}
+        {/* CHARTS */}
+        {/* =================================================== */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          {/* BAR CHART */}
           <div className="p-5 bg-white shadow-sm border rounded-xl">
             <h2 className="text-lg font-semibold mb-3">
               Total Reviews per Brand
             </h2>
-            <div className="h-[180px] md:h-[220px]">
+            <div className="h-[350px] md:h-[550px]">
               <Bar
                 data={barData}
                 options={{
@@ -273,11 +319,12 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
 
+          {/* RADAR CHART */}
           <div className="p-5 bg-white shadow-sm border rounded-xl">
             <h2 className="text-lg font-semibold mb-3">
-              Average Experiences Overview
+              Experiences Frequency Overview
             </h2>
-            <div className="h-[180px] md:h-[220px]">
+            <div className="h-[350px] md:h-[550px]">
               <Radar
                 data={radarData}
                 options={{
@@ -286,9 +333,10 @@ export default function SuperAdminDashboard() {
                   plugins: { legend: { display: false } },
                   scales: {
                     r: {
-                      angleLines: { display: false },
+                      angleLines: { display: true },
                       grid: { color: "rgba(0,0,0,0.1)" },
-                      pointLabels: { font: { size: 10 } },
+                      pointLabels: { font: { size: 11 } },
+                      ticks: { display: false },
                     },
                   },
                 }}
@@ -297,7 +345,9 @@ export default function SuperAdminDashboard() {
           </div>
         </section>
 
-        {/* FILTER */}
+        {/* =================================================== */}
+        {/* FILTER + TABLES */}
+        {/* =================================================== */}
         <div className="mb-6">
           <label className="text-gray-700 font-medium mr-3">
             Filter rating:
@@ -316,7 +366,6 @@ export default function SuperAdminDashboard() {
           </select>
         </div>
 
-        {/* TABLES */}
         {!loading &&
           brandTables.map((item) => {
             const tableReviews = filterReviews(allReviews[item.table] || []);
