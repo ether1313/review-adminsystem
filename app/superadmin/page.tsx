@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import ReviewsTable from "../admin/dashboard/ReviewsTable";
 import TopNav from "../admin/dashboard/TopNav";
 
-// Chart imports
+// Chart.js
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -18,6 +18,7 @@ import {
   PointElement,
   LineElement,
 } from "chart.js";
+
 import { Bar, Radar } from "react-chartjs-2";
 
 ChartJS.register(
@@ -74,7 +75,7 @@ export default function SuperAdminDashboard() {
     verify();
   }, []);
 
-  // LOAD ALL TABLE DATA
+  // LOAD ALL BRAND TABLES
   async function loadAllTables() {
     let results: any = {};
 
@@ -90,14 +91,15 @@ export default function SuperAdminDashboard() {
     setLoading(false);
   }
 
+  // FILTER REVIEWS
   const filterReviews = (reviews: any[]) => {
     if (filterRating === "all") return reviews;
     return reviews.filter((r: any) => r.rating === Number(filterRating));
   };
 
+  // EXPORT CSV
   const exportCSV = (brand: string, rows: any[]) => {
     if (!rows.length) return;
-
     const header = Object.keys(rows[0]).join(",");
     const body = rows.map((r) =>
       Object.values(r)
@@ -113,160 +115,189 @@ export default function SuperAdminDashboard() {
     link.click();
   };
 
-  // ============================================
-  // BUILD CHART DATA
-  // ============================================
+  // ============================================================
+  // SUMMARY CALCULATIONS
+  // ============================================================
 
   const brandNames = brandTables.map((b) => b.brand);
-
   const reviewCounts = brandTables.map(
     (b) => allReviews[b.table]?.length || 0
   );
+
+  // Colors for brand bars
+  const brandColors = [
+    "#4dc9f6",
+    "#f67019",
+    "#f53794",
+    "#537bc4",
+    "#acc236",
+    "#166a8f",
+    "#00a950",
+    "#58595b",
+    "#8549ba",
+    "#ffa600",
+  ];
 
   const avgRatings = brandTables.map((b) => {
     const rows = allReviews[b.table] || [];
     if (!rows.length) return 0;
     const sum = rows.reduce((acc: any, r: any) => acc + r.rating, 0);
-    return (sum / rows.length).toFixed(2);
+    return Number((sum / rows.length).toFixed(2));
   });
 
-  // Different colors for each bar
-  const barColors = [
-    "#4dc9f6", "#f67019", "#f53794", "#537bc4", "#acc236",
-    "#166a8f", "#00a950", "#58595b", "#8549ba", "#e8c547"
-  ];
-
+  // Bar chart data
   const barData = {
     labels: brandNames,
     datasets: [
       {
         label: "Total Reviews",
         data: reviewCounts,
-        backgroundColor: barColors,
+        backgroundColor: brandColors,
       },
     ],
   };
 
+  // Radar chart data
   const radarData = {
     labels: brandNames,
     datasets: [
       {
-        label: "Average Experience Rating",
+        label: "Average Experiences Score",
         data: avgRatings,
-        backgroundColor: "rgba(54, 162, 235, 0.35)",
-        borderColor: "rgba(54, 162, 235, 1)",
-        borderWidth: 2,
+        backgroundColor: "rgba(75, 192, 255, 0.25)",
+        borderColor: "rgba(75, 192, 255, 1)",
       },
     ],
   };
 
-  // ============================================
-  // SUMMARY CARD CALCULATIONS
-  // ============================================
+  // Summary — Total reviews
+  const totalReviewsAllBrands = reviewCounts.reduce((a, b) => a + b, 0);
 
-  // Total reviews across all brands
-  const totalReviewsAllBrands = brandTables.reduce((acc, b) => {
-    return acc + (allReviews[b.table]?.length || 0);
-  }, 0);
-
-  // Global average rating
+  // Summary — Global average rating
   let allRatings: number[] = [];
   brandTables.forEach((b) => {
-    const rows = allReviews[b.table] || [];
-    rows.forEach((r: any) => allRatings.push(r.rating));
+    (allReviews[b.table] || []).forEach((r: any) =>
+      allRatings.push(r.rating)
+    );
   });
 
   const globalAverageRating = allRatings.length
     ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2)
     : "0.00";
 
-  // Rank brands by rating
-  const brandRankings = brandTables
+  // Summary — Highest rated brand
+  const sortedBrands = brandTables
     .map((b) => {
       const rows = allReviews[b.table] || [];
-      if (!rows.length) return { brand: b.brand, rating: 0 };
+      if (!rows.length) return null;
       const avg =
         rows.reduce((sum: any, r: any) => sum + r.rating, 0) / rows.length;
       return { brand: b.brand, rating: avg };
     })
-    .sort((a, b) => b.rating - a.rating);
+    .filter(Boolean)
+    .sort((a: any, b: any) => b.rating - a.rating);
 
-  const top1 = brandRankings[0];
-  const top2 = brandRankings[1];
-  const top3 = brandRankings[2];
+  const top1 = sortedBrands[0] || null;
+  const top2 = sortedBrands[1] || null;
+  const top3 = sortedBrands[2] || null;
 
-  // ============================================
+  // ============================================================
 
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
-
-        {/* PAGE TITLE */}
-        <h1 className="text-3xl md:text-4xl font-bold mb-6">SuperAdmin Dashboard</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-6">
+          SuperAdmin Dashboard
+        </h1>
 
         {/* =================== SUMMARY CARDS =================== */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
-
-          <div className="p-5 bg-white shadow rounded-xl">
-            <h3 className="text-gray-500 text-sm">Total Reviews (10 Brands)</h3>
-            <p className="text-2xl md:text-3xl font-bold mt-2">{totalReviewsAllBrands}</p>
+          <div className="p-5 bg-white shadow-sm border rounded-xl">
+            <h3 className="text-gray-500 text-xs md:text-sm">Total Reviews</h3>
+            <p className="text-2xl md:text-3xl font-bold mt-2">
+              {totalReviewsAllBrands}
+            </p>
           </div>
 
-          <div className="p-5 bg-white shadow rounded-xl">
-            <h3 className="text-gray-500 text-sm">Global Avg Rating</h3>
-            <p className="text-2xl md:text-3xl font-bold mt-2">{globalAverageRating}</p>
+          <div className="p-5 bg-white shadow-sm border rounded-xl">
+            <h3 className="text-gray-500 text-xs md:text-sm">
+              Global Average Rating
+            </h3>
+            <p className="text-2xl md:text-3xl font-bold mt-2">
+              {globalAverageRating}
+            </p>
           </div>
 
-          <div className="p-5 bg-white shadow rounded-xl">
-            <h3 className="text-gray-500 text-sm">Top Game</h3>
-            <p className="text-xl font-semibold mt-1">{top1?.brand || "-"}</p>
-            <p className="text-gray-600 text-sm">2nd: {top2?.brand || "-"}</p>
-            <p className="text-gray-600 text-sm">3rd: {top3?.brand || "-"}</p>
+          <div className="p-5 bg-white shadow-sm border rounded-xl">
+            <h3 className="text-gray-500 text-xs md:text-sm">
+              Highest Rated Brand
+            </h3>
+            <p className="text-lg font-semibold mt-1">{top1?.brand || "-"}</p>
+            <p className="text-gray-600 text-xs">
+              Avg Rating: {top1?.rating?.toFixed(2)}
+            </p>
           </div>
 
-          <div className="p-5 bg-white shadow rounded-xl">
-            <h3 className="text-gray-500 text-sm">Brands Count</h3>
-            <p className="text-2xl md:text-3xl font-bold mt-2">10</p>
+          <div className="p-5 bg-white shadow-sm border rounded-xl">
+            <h3 className="text-gray-500 text-xs md:text-sm">
+              Top Games Rated
+            </h3>
+            <p className="text-base font-semibold mt-1">
+              2nd: {top2?.brand || "-"}
+            </p>
+            <p className="text-base font-semibold">3rd: {top3?.brand || "-"}</p>
           </div>
-
         </section>
 
-        {/* ==================== DATA VISUALIZATION ==================== */}
+        {/* ==================== CHARTS ==================== */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-
-          <div className="p-6 bg-white shadow rounded-xl">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">
+          <div className="p-5 bg-white shadow-sm border rounded-xl">
+            <h2 className="text-lg font-semibold mb-3">
               Total Reviews per Brand
             </h2>
-            <Bar
-              data={barData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
-              height={250}
-            />
+            <div className="h-[180px] md:h-[220px]">
+              <Bar
+                data={barData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { ticks: { font: { size: 10 } } },
+                    x: { ticks: { font: { size: 10 } } },
+                  },
+                }}
+              />
+            </div>
           </div>
 
-          <div className="p-6 bg-white shadow rounded-xl">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">
+          <div className="p-5 bg-white shadow-sm border rounded-xl">
+            <h2 className="text-lg font-semibold mb-3">
               Average Experiences Overview
             </h2>
-            <Radar
-              data={radarData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-              }}
-              height={250}
-            />
+            <div className="h-[180px] md:h-[220px]">
+              <Radar
+                data={radarData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    r: {
+                      angleLines: { display: false },
+                      grid: { color: "rgba(0,0,0,0.1)" },
+                      pointLabels: { font: { size: 10 } },
+                    },
+                  },
+                }}
+              />
+            </div>
           </div>
-
         </section>
 
-        {/* ==================== FILTER ==================== */}
+        {/* FILTER */}
         <div className="mb-6">
           <label className="text-gray-700 font-medium mr-3">
             Filter rating:
@@ -285,15 +316,15 @@ export default function SuperAdminDashboard() {
           </select>
         </div>
 
-        {/* ==================== REVIEWS TABLES ==================== */}
+        {/* TABLES */}
         {!loading &&
           brandTables.map((item) => {
             const tableReviews = filterReviews(allReviews[item.table] || []);
 
             return (
               <div key={item.table} className="mb-12">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-3">
-                  <h2 className="text-xl md:text-2xl font-semibold">{item.brand} Reviews</h2>
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-xl font-semibold">{item.brand} Reviews</h2>
 
                   <button
                     onClick={() => exportCSV(item.brand, tableReviews)}
@@ -303,14 +334,12 @@ export default function SuperAdminDashboard() {
                   </button>
                 </div>
 
-                <div className="bg-white shadow rounded-xl p-3 md:p-5">
-                  <ReviewsTable
-                    reviews={tableReviews}
-                    onSort={() => {}}
-                    sortColumn={null}
-                    sortDirection="asc"
-                  />
-                </div>
+                <ReviewsTable
+                  reviews={tableReviews}
+                  onSort={() => {}}
+                  sortColumn={null}
+                  sortDirection="asc"
+                />
               </div>
             );
           })}
