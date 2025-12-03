@@ -242,7 +242,7 @@ export default function SuperAdminDashboard() {
 
         {/* PAGE TITLE */}
         <h1 className="text-xl md:text-3xl font-bold mb-6">
-          SuperAdmin Dashboard
+          🦘 SuperAdmin 🇦🇺
         </h1>
 
         {/* SUMMARY CARDS */}
