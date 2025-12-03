@@ -5,6 +5,29 @@ import { useRouter } from "next/navigation";
 import ReviewsTable from "../admin/dashboard/ReviewsTable";
 import TopNav from "../admin/dashboard/TopNav";
 
+// Chart imports
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  ArcElement,
+  BarElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+} from "chart.js";
+import { Bar, Radar } from "react-chartjs-2";
+
+ChartJS.register(
+  RadialLinearScale,
+  ArcElement,
+  BarElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale
+);
+
 export default function SuperAdminDashboard() {
   const router = useRouter();
 
@@ -12,7 +35,6 @@ export default function SuperAdminDashboard() {
   const [allReviews, setAllReviews] = useState<any>({});
   const [filterRating, setFilterRating] = useState("all");
 
-  // 10 个品牌及其表名
   const brandTables = [
     { brand: "iPay9", table: "ipay9_review" },
     { brand: "Kingbet9", table: "kingbet9_review" },
@@ -26,34 +48,29 @@ export default function SuperAdminDashboard() {
     { brand: "Bybid9", table: "bybid9_review" },
   ];
 
-  // superadmin logout
+  // LOGOUT
   const handleLogout = async () => {
     await fetch("/api/logout", { method: "POST" });
     localStorage.setItem("logoutSuccess", "true");
     router.replace("/");
   };
 
-  // 验证 superadmin
+  // VERIFY SUPERADMIN
   useEffect(() => {
     async function verify() {
-      const res = await fetch("/api/check-superadmin", {
-        cache: "no-store",
-      });
-
+      const res = await fetch("/api/check-superadmin", { cache: "no-store" });
       const data = await res.json();
 
       if (!data.superadmin) {
         router.replace("/");
         return;
       }
-
       loadAllTables();
     }
-
     verify();
   }, []);
 
-  // 加载全部 tables
+  // LOAD ALL TABLE DATA
   async function loadAllTables() {
     let results: any = {};
 
@@ -61,7 +78,6 @@ export default function SuperAdminDashboard() {
       const res = await fetch(`/api/get-table?table=${item.table}`, {
         cache: "no-store",
       });
-
       const data = await res.json();
       results[item.table] = data.reviews || [];
     }
@@ -86,55 +102,147 @@ export default function SuperAdminDashboard() {
     );
 
     const csv = [header, ...body].join("\n");
-
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
-
     link.href = URL.createObjectURL(blob);
     link.download = `${brand}_reviews.csv`;
     link.click();
   };
 
+  // ============================================
+  // ⭐ BUILD CHART DATA
+  // ============================================
+
+  const brandNames = brandTables.map((b) => b.brand);
+
+  const reviewCounts = brandTables.map(
+    (b) => allReviews[b.table]?.length || 0
+  );
+
+  const avgRatings = brandTables.map((b) => {
+    const rows = allReviews[b.table] || [];
+    if (!rows.length) return 0;
+    const sum = rows.reduce((acc: any, r: any) => acc + r.rating, 0);
+    return (sum / rows.length).toFixed(2);
+  });
+
+  const barData = {
+    labels: brandNames,
+    datasets: [
+      {
+        label: "Total Reviews",
+        data: reviewCounts,
+        backgroundColor: "rgba(75, 192, 255, 0.6)",
+      },
+    ],
+  };
+
+  const radarData = {
+    labels: brandNames,
+    datasets: [
+      {
+        label: "Average Rating",
+        data: avgRatings,
+        backgroundColor: "rgba(255, 159, 64, 0.4)",
+        borderColor: "rgba(255, 159, 64, 1)",
+      },
+    ],
+  };
+
+  // ============================================
+  // ⭐ SUMMARY CARD CALCULATIONS
+  // ============================================
+
+  // Total reviews across all brands
+  const totalReviewsAllBrands = brandTables.reduce((acc, b) => {
+    return acc + (allReviews[b.table]?.length || 0);
+  }, 0);
+
+  // Global average rating
+  let allRatings: number[] = [];
+  brandTables.forEach((b) => {
+    const rows = allReviews[b.table] || [];
+    rows.forEach((r: any) => allRatings.push(r.rating));
+  });
+
+  const globalAverageRating = allRatings.length
+    ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2)
+    : "0.00";
+
+  // Highest rated brand
+  let highestRatedBrand: any = null;
+  brandTables.forEach((b) => {
+    const rows = allReviews[b.table] || [];
+    if (!rows.length) return;
+
+    const avg =
+      rows.reduce((sum: any, r: any) => sum + r.rating, 0) / rows.length;
+
+    if (!highestRatedBrand || avg > highestRatedBrand.rating) {
+      highestRatedBrand = { brand: b.brand, rating: avg.toFixed(2) };
+    }
+  });
+
+  // Games 系列 count（品牌名含数字 → 视为 games）
+  const gamesSeriesCount = brandTables.filter((b) =>
+    b.brand.match(/\d/)
+  ).length;
+
+  // ============================================
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 顶部导航栏 */}
       <TopNav onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
 
-        {/* ========== HEADER（Responsive） ========== */}
-        <div className="flex items-center justify-between mb-6">
-          {/* SuperAdmin 标题 */}
-          <h1 className="text-4xl font-bold">SuperAdmin</h1>
+        {/* PAGE TITLE */}
+        <h1 className="text-4xl font-bold mb-6">SuperAdmin Dashboard</h1>
 
-          {/* Desktop Button */}
-          <button
-            onClick={() => router.push("/superadmin/analytics")}
-            className="
-              hidden sm:flex 
-              bg-purple-600 hover:bg-purple-700 
-              text-white px-4 py-2 rounded-md
-              font-semibold shadow-md
-            "
-          >
-            Analytics
-          </button>
+        {/* =================== SUMMARY CARDS =================== */}
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
 
-          {/* Mobile Minimalist Button */}
-          <button
-            onClick={() => router.push("/superadmin/analytics")}
-            className="
-              sm:hidden 
-              bg-purple-600 hover:bg-purple-700
-              text-white px-3 py-2 rounded-lg
-              font-semibold shadow-md
-            "
-          >
-            Analytics
-          </button>
-        </div>
+          <div className="p-6 bg-white shadow rounded-xl">
+            <h3 className="text-gray-500 text-sm">Total Reviews (10 Brands)</h3>
+            <p className="text-3xl font-bold mt-2">{totalReviewsAllBrands}</p>
+          </div>
 
-        {/* ========== FILTER SECTION ========== */}
+          <div className="p-6 bg-white shadow rounded-xl">
+            <h3 className="text-gray-500 text-sm">Global Average Rating</h3>
+            <p className="text-3xl font-bold mt-2">{globalAverageRating}</p>
+          </div>
+
+          <div className="p-6 bg-white shadow rounded-xl">
+            <h3 className="text-gray-500 text-sm">Highest Rated Brand</h3>
+            <p className="text-xl font-semibold mt-2">
+              {highestRatedBrand?.brand || "-"}
+            </p>
+            <p className="text-gray-600 text-sm">
+              Avg Rating: {highestRatedBrand?.rating || "-"}
+            </p>
+          </div>
+
+          <div className="p-6 bg-white shadow rounded-xl">
+            <h3 className="text-gray-500 text-sm">Games 系列 Count</h3>
+            <p className="text-3xl font-bold mt-2">{gamesSeriesCount}</p>
+          </div>
+
+        </section>
+
+        {/* ==================== DATA VISUALIZATION ==================== */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+          <div className="p-6 bg-white shadow rounded-xl">
+            <h2 className="text-xl font-semibold mb-4">Total Reviews per Brand</h2>
+            <Bar data={barData} />
+          </div>
+
+          <div className="p-6 bg-white shadow rounded-xl">
+            <h2 className="text-xl font-semibold mb-4">Average Rating Overview</h2>
+            <Radar data={radarData} />
+          </div>
+        </section>
+
+        {/* ==================== FILTER ==================== */}
         <div className="mb-6">
           <label className="text-gray-700 font-medium mr-3">
             Filter rating:
@@ -153,8 +261,7 @@ export default function SuperAdminDashboard() {
           </select>
         </div>
 
-        {loading && <p>Loading all tables...</p>}
-
+        {/* ==================== REVIEWS TABLES ==================== */}
         {!loading &&
           brandTables.map((item) => {
             const tableReviews = filterReviews(allReviews[item.table] || []);
