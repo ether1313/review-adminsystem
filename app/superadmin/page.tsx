@@ -109,7 +109,7 @@ export default function SuperAdminDashboard() {
 
           {/* Desktop Button */}
           <button
-            onClick={() => router.push("/superadmin/analytic")}
+            onClick={() => router.push("/superadmin/analytics")}
             className="
               hidden sm:flex 
               bg-purple-600 hover:bg-purple-700 
