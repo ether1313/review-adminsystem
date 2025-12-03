@@ -103,32 +103,55 @@ export default function SuperAdminDashboard() {
       <TopNav onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
-        <h1 className="text-3xl font-bold mb-6">⭐SuperAdmin⭐</h1>
+        <h1 className="text-4xl font-bold mb-6 flex items-center gap-3">
+        <span>SuperAdmin</span>
 
+        {/* Desktop button */}
+        <div className="hidden sm:block">
+            <button
+            onClick={() => router.push("/superadmin/analytic")}
+            className="
+                bg-purple-600 text-white font-semibold 
+                px-5 py-2 rounded-xl shadow-md hover:bg-purple-700
+                flex items-center gap-2
+            "
+            >
+            Analytics Dashboard
+            </button>
+        </div>
+        </h1>
+
+        {/* Mobile 按钮（整行） */}
+        <div className="sm:hidden mb-4">
         <button
-            onClick={() => router.push("/superadmin/analytics")}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+            onClick={() => router.push("/superadmin/analytic")}
+            className="
+            bg-purple-600 text-white font-semibold 
+            px-5 py-3 rounded-xl shadow-md hover:bg-purple-700
+            w-full flex items-center justify-center gap-2
+            "
         >
             Analytics Dashboard
         </button>
+        </div>
 
         {/* Filter */}
         <div className="mb-6">
-          <label className="text-gray-700 font-medium mr-3">
+        <label className="text-gray-700 font-medium mr-3">
             Filter rating:
-          </label>
-          <select
+        </label>
+        <select
             className="border px-3 py-2 rounded-lg"
             value={filterRating}
             onChange={(e) => setFilterRating(e.target.value)}
-          >
+        >
             <option value="all">All Ratings</option>
             <option value="5">★★★★★</option>
             <option value="4">★★★★</option>
             <option value="3">★★★</option>
             <option value="2">★★</option>
             <option value="1">★</option>
-          </select>
+        </select>
         </div>
 
         {loading && <p>Loading all tables...</p>}
