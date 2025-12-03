@@ -15,6 +15,8 @@ import {
   Legend,
   CategoryScale,
   LinearScale,
+  PointElement,
+  LineElement,
 } from "chart.js";
 import { Bar, Radar } from "react-chartjs-2";
 
@@ -25,7 +27,9 @@ ChartJS.register(
   Tooltip,
   Legend,
   CategoryScale,
-  LinearScale
+  LinearScale,
+  PointElement,
+  LineElement,
 );
 
 export default function SuperAdminDashboard() {
