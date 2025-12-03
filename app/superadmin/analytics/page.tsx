@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Chart.js imports
+// Chart.js + react-chartjs-2
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -12,11 +12,11 @@ import {
   Tooltip,
   Legend,
   CategoryScale,
-  LinearScale
+  LinearScale,
 } from "chart.js";
 import { Bar, Radar } from "react-chartjs-2";
 
-// Register chart.js components
+// 必须 register
 ChartJS.register(
   RadialLinearScale,
   ArcElement,
@@ -33,7 +33,6 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [allReviews, setAllReviews] = useState<any[]>([]);
 
-  // Brand + Table map
   const brandTables = [
     { brand: "iPay9", table: "ipay9_review" },
     { brand: "Kingbet9", table: "kingbet9_review" },
@@ -46,6 +45,14 @@ export default function AnalyticsPage() {
     { brand: "Rolex9", table: "rolex9_review" },
     { brand: "Bybid9", table: "bybid9_review" },
   ];
+
+  // Typed random color generator
+  function randomColors(len: number): string[] {
+    return Array.from({ length: len }, (_: unknown, i: number) => {
+      const hue = (i * 36) % 360;
+      return `hsl(${hue}, 85%, 55%)`;
+    });
+  }
 
   // Load all tables
   useEffect(() => {
@@ -72,20 +79,18 @@ export default function AnalyticsPage() {
   }, []);
 
   if (loading)
-    return (
-      <div className="p-10 text-center text-xl font-medium">Loading analytics...</div>
-    );
+    return <div className="p-10 text-center text-xl font-medium">Loading analytics...</div>;
 
-  // -----------------------------
-  // CALCULATIONS
-  // -----------------------------
+  // --------------------------------------
+  // 计算数据
+  // --------------------------------------
 
-  // Rating distribution
+  // Rating Count (Radar)
   const ratingCount = [1, 2, 3, 4, 5].map(
     (star) => allReviews.filter((r) => r.rating === star).length
   );
 
-  // Brand review count
+  // Brand Review Count (Bar)
   const brandCount = brandTables.map((b) => ({
     brand: b.brand,
     count: allReviews.filter((r) => r.brand === b.brand).length,
@@ -94,45 +99,38 @@ export default function AnalyticsPage() {
   // Games Count
   const gameMap: Record<string, number> = {};
   allReviews.forEach((r) => {
-    r.games
-      .split(",")
-      .map((g: string) => g.trim())
-      .forEach((g: string) => {
-        if (!gameMap[g]) gameMap[g] = 0;
-        gameMap[g]++;
-      });
+    if (!r.games) return;
+    r.games.split(",").map((g: string) => g.trim()).forEach((g: string) => {
+      if (!gameMap[g]) gameMap[g] = 0;
+      gameMap[g]++;
+    });
   });
+
   const gamesLabels = Object.keys(gameMap);
   const gamesValues = Object.values(gameMap);
 
   // Experiences Count
   const expMap: Record<string, number> = {};
   allReviews.forEach((r) => {
-    r.experiences
-      .split(",")
-      .map((e: string) => e.trim())
-      .forEach((e: string) => {
-        if (!expMap[e]) expMap[e] = 0;
-        expMap[e]++;
-      });
+    if (!r.experiences) return;
+    r.experiences.split(",").map((e: string) => e.trim()).forEach((e: string) => {
+      if (!expMap[e]) expMap[e] = 0;
+      expMap[e]++;
+    });
   });
+
   const expLabels = Object.keys(expMap);
   const expValues = Object.values(expMap);
 
-  // Random color generator
-  const randomColors = (len: number) =>
-    Array.from({ length: len }, () =>
-      `hsl(${Math.floor(Math.random() * 360)}, 85%, 55%)`
-    );
+  // --------------------------------------
+  // Return Page UI
+  // --------------------------------------
 
   return (
     <div className="min-h-screen bg-gray-50 p-5 sm:p-10">
-
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold flex items-center gap-2">
-          Analytics Dashboard
-        </h1>
+        <h1 className="text-3xl sm:text-4xl font-bold">Analytics Dashboard</h1>
 
         <button
           onClick={() => router.push("/superadmin")}
@@ -142,10 +140,10 @@ export default function AnalyticsPage() {
         </button>
       </div>
 
-      {/* Responsive Grid */}
+      {/* GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-        {/* Rating Radar Chart */}
+        {/* Radar Chart - Rating Count */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Rating Distribution</h2>
           <Radar
@@ -161,16 +159,10 @@ export default function AnalyticsPage() {
                 },
               ],
             }}
-            options={{ responsive: true }}
           />
-          <div className="mt-4 text-sm text-gray-700">
-            {ratingCount.map((v, i) => (
-              <p key={i}>⭐{i + 1}: {v}</p>
-            ))}
-          </div>
         </div>
 
-        {/* Brand Review Count */}
+        {/* Bar - Brand Count */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Reviews per Brand</h2>
           <Bar
@@ -184,11 +176,10 @@ export default function AnalyticsPage() {
                 },
               ],
             }}
-            options={{ responsive: true }}
           />
         </div>
 
-        {/* Games Count */}
+        {/* Bar - Games Count */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Games Count</h2>
           <Bar
@@ -202,11 +193,10 @@ export default function AnalyticsPage() {
                 },
               ],
             }}
-            options={{ responsive: true }}
           />
         </div>
 
-        {/* Experiences Count */}
+        {/* Bar - Experiences Count */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Experiences Count</h2>
           <Bar
@@ -220,7 +210,6 @@ export default function AnalyticsPage() {
                 },
               ],
             }}
-            options={{ responsive: true }}
           />
         </div>
 

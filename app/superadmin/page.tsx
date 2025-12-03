@@ -117,7 +117,7 @@ export default function SuperAdminDashboard() {
               font-semibold shadow-md
             "
           >
-            Analytics Dashboard
+            Analytics
           </button>
 
           {/* Mobile Minimalist Button */}
