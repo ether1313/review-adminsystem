@@ -38,7 +38,7 @@ export default function TopNav({ onLogout }: TopNavProps) {
               onClick={handleLogoutClick}
               className="px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium whitespace-nowrap cursor-pointer"
             >
-              Logout
+              Logout ➜]
             </button>
           </div>
         </div>
