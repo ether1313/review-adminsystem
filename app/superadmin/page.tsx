@@ -241,7 +241,7 @@ export default function SuperAdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 pt-6 pb-20">
 
         {/* PAGE TITLE */}
-        <h1 className="text-3xl md:text-4xl font-bold mb-6">
+        <h1 className="text-xl md:text-3xl font-bold mb-6">
           SuperAdmin Dashboard
         </h1>
 
@@ -353,7 +353,7 @@ export default function SuperAdminDashboard() {
 
                   <button
                     onClick={() => exportCSV(item.brand, tableReviews)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg"
                   >
                     Export CSV
                   </button>
