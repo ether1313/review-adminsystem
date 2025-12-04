@@ -84,7 +84,7 @@ export default function Home() {
       } else {
         router.push("/admin/dashboard");
       }
-    }, 700);
+    }, 500);
   };
 
   // Handle Register
